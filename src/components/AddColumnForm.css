@@ -1,0 +1,17 @@
+/* AddColumnForm — starter styles, extend freely.
+   Modeled on .column in Column.css — a similarly-sized dashed "ghost"
+   column often reads well here, but it's your call.
+   Tokens available from src/styles/index.css:
+   --color-accent, --color-border, --color-surface, --color-text-muted,
+   --radius-md, --font-body, --font-mono */
+
+.add-column-form {
+  width: 300px;
+  min-width: 300px;
+}
+
+.add-column-form__placeholder {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

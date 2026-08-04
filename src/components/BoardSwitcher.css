@@ -1,0 +1,15 @@
+/* BoardSwitcher — starter styles, extend freely.
+   Tokens available from src/styles/index.css:
+   --color-accent, --color-accent-soft, --color-border, --color-surface,
+   --color-text, --color-text-muted, --radius-sm, --radius-md,
+   --shadow-card, --shadow-card-hover, --font-display, --font-body, --font-mono */
+
+.board-switcher {
+  position: relative;
+}
+
+.board-switcher__placeholder {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-text-muted);
+}

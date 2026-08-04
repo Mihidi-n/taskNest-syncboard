@@ -1,0 +1,13 @@
+/* ColumnMenu — starter styles, extend freely.
+   Tokens available from src/styles/index.css:
+   --color-text-muted, --color-navy, --color-bg, --radius-sm, --font-mono */
+
+.column-menu {
+  display: inline-flex;
+}
+
+.column-menu__placeholder {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  cursor: default;
+}

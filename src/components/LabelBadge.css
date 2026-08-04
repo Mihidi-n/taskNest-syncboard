@@ -1,0 +1,11 @@
+/* LabelBadge — starter styles, extend freely.
+   .task-card__tag in TaskCard.css shows the existing single-tag pill
+   style you can build multi-label pills from.
+   Tokens available from src/styles/index.css:
+   --tag-frontend, --tag-backend, --tag-design, --tag-docs, --tag-bug,
+   --radius-sm/--radius-md, --font-body */
+
+.label-badge {
+  display: inline-flex;
+  gap: 4px;
+}

@@ -1,0 +1,23 @@
+/* ShareBoardModal — starter styles, extend freely.
+   Tokens available from src/styles/index.css:
+   --color-surface, --color-border, --color-text, --color-text-muted,
+   --color-accent, --radius-md, --shadow-card-hover, --font-display,
+   --font-body, --font-mono */
+
+.share-board-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 28, 59, 0.45);
+  z-index: 50;
+}
+
+.share-board-modal__placeholder {
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: var(--shadow-card-hover);
+  max-width: 90vw;
+}
