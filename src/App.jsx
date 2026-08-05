@@ -25,6 +25,16 @@ export default function App() {
 
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const [isShareOpen, setIsShareOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [showCreateBoard, setShowCreateBoard] = useState(false)
+  const [newBoardTitle, setNewBoardTitle] = useState("")
+
+  const handleCreateBoard = () => {
+  if (newBoardTitle.trim() === "") return
+  createBoard(newBoardTitle)
+  setNewBoardTitle("")
+  setShowCreateBoard(false)
+}
 
   // TaskFilterBar controls this via onFilterChange — see that component
   // for how it's used. Defaults to "show everything" until it's built.
@@ -43,7 +53,21 @@ export default function App() {
             <p className="app__subtitle"></p>
           </div>
         </div>
+
         <div className="app__header-actions">
+        <input 
+          type="text"
+          placeholder="Search boards..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="app__search"
+        />
+
+  {/* CREATE BOARD BUTTON */}
+          <button className="app__create-btn" onClick={() => setShowCreateBoard(true)}>
+            + Create Board
+          </button>
+
           <button className="app__share-trigger" onClick={() => setIsShareOpen(true)}>
             Share
           </button>
@@ -51,12 +75,34 @@ export default function App() {
         </div>
       </header>
 
+      {/* CREATE BOARD MODAL */}
+{showCreateBoard && (
+  <div className="modal-overlay" onClick={() => setShowCreateBoard(false)}>
+    <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <h2>Create New Board</h2>
+      <input
+        type="text"
+        placeholder="Enter board title..."
+        value={newBoardTitle}
+        onChange={(e) => setNewBoardTitle(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleCreateBoard()}
+        autoFocus
+      />
+      <div className="modal-actions">
+        <button onClick={handleCreateBoard}>Create</button>
+        <button onClick={() => setShowCreateBoard(false)}>Cancel</button>
+      </div>
+    </div>
+  </div>
+)}
+
       <div className="app__toolbar">
         <BoardSwitcher
           boards={boards}
           activeBoardId={activeBoardId}
           onSelect={selectBoard}
           onCreate={createBoard}
+          searchQuery={searchQuery}
         />
         <TaskFilterBar tasks={activeBoard.tasks} onFilterChange={setFilterFn} />
       </div>
