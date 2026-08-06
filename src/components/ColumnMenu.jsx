@@ -2,30 +2,28 @@ import './ColumnMenu.css'
 
 /**
  * ColumnMenu
- * Features: "delete option for a list" + "rename a list"
- *
- * Already wired in — rendered inside Column.jsx's header, next to the
- * task count. You don't need to import this anywhere or touch
- * Column.jsx.
- *
- * Props you get:
- *   column          — { id, title } for this column
- *   onRename(title) — call this with the new title to rename the list
- *   onDelete()      — call this to delete the list (and, per the
- *                     shared hook, every task in it — you may want a
- *                     confirm() prompt before calling this)
- *
- * What to build:
- *   A small "…" menu (or two icon buttons) with Rename and Delete.
- *   Rename could be an inline-editable title (click to turn it into an
- *   input, Enter/blur to save) or a tiny popover with a text field —
- *   your call. Either way it should end by calling onRename(newTitle).
+ * Feature: delete a list — a small "x" that sits next to the task
+ * count in Column.jsx's header. Rename lives in Column.jsx itself
+ * (click the list title to edit it), not here.
  */
-export default function ColumnMenu({ column, onRename, onDelete }) {
+export default function ColumnMenu({ column, onDelete }) {
+  function handleDeleteClick() {
+    const confirmed = window.confirm(
+      `Delete "${column.title}"? Any tasks in this list will be deleted too.`
+    )
+    if (confirmed) {
+      onDelete()
+    }
+  }
+
   return (
-    <div className="column-menu">
-      {/* TODO: build rename + delete UI here, calling onRename(title) / onDelete() */}
-      <span className="column-menu__placeholder">⋯</span>
-    </div>
+    <button
+      className="column-menu__delete"
+      onClick={handleDeleteClick}
+      aria-label={`Delete list ${column.title}`}
+      title="Delete list"
+    >
+      ×
+    </button>
   )
 }

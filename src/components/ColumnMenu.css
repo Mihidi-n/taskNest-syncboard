@@ -1,13 +1,15 @@
-/* ColumnMenu — starter styles, extend freely.
-   Tokens available from src/styles/index.css:
-   --color-text-muted, --color-navy, --color-bg, --radius-sm, --font-mono */
-
-.column-menu {
-  display: inline-flex;
+.column-menu__delete {
+  background: none;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #9ca3af;
 }
 
-.column-menu__placeholder {
-  color: var(--color-text-muted);
-  font-size: 14px;
-  cursor: default;
+.column-menu__delete:hover {
+  background: #fef2f2;
+  color: #dc2626;
 }
