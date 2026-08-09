@@ -1,47 +1,210 @@
+import { useState } from 'react'
+import { tags } from '../data/mockData'
+import LabelBadge from './LabelBadge'
 import './TaskDetailModal.css'
 
-/**
- * TaskDetailModal
- * Feature: "due dates & description (after clicking)"
- *
- * Already wired in — App.jsx opens this whenever a task card is
- * clicked (that click-to-open wiring is already done in TaskCard.jsx —
- * you don't need to touch it). You don't need to import this
- * component anywhere either.
- *
- * Props you get:
- *   task    — the full task object: { id, title, description, dueDate,
- *             labels, tag, assignee, columnId }. dueDate is either
- *             null or an ISO date string like '2026-08-16'.
- *   onClose()          — call this to close the modal without saving
- *                         further changes (e.g. Cancel button, or the
- *                         backdrop)
- *   onSave(fields)      — call this with an object of just the fields
- *                         you're changing, e.g. onSave({ description:
- *                         '...', dueDate: '2026-08-20' }). Merges into
- *                         the task automatically.
- *   onDelete()          — call this to delete the whole task
- *
- * What to build:
- *   A modal (a native <dialog> works well and is what the rest of the
- *   app would use — see MDN for showModal()/close()) with:
- *     - the task title
- *     - an editable description textarea
- *     - a due date input (type="date")
- *     - Save / Cancel / Delete actions
- *
- * You don't have to call onSave on every keystroke — it's fine to
- * collect changes in local component state and only call onSave once,
- * when the user clicks Save.
- */
+function normalizeTaskLabels(labels = []) {
+  return labels
+    .map((label, index) => {
+      if (typeof label === 'string') {
+        const tag = tags[label]
+        return {
+          name: tag?.label ?? label,
+          color: tag?.color ?? 'var(--color-border)',
+          raw: label,
+          key: `string-${label}-${index}`,
+        }
+      }
+
+      if (typeof label === 'object' && label !== null) {
+        return {
+          name: label.name ?? label.label ?? 'Label',
+          color: label.color ?? 'var(--color-border)',
+          raw: label,
+          key: `${label.name ?? label.label}-${label.color}-${index}`,
+        }
+      }
+
+      return null
+    })
+    .filter(Boolean)
+}
+
 export default function TaskDetailModal({ task, onClose, onSave, onDelete }) {
+  const [description, setDescription] = useState(task.description ?? '')
+  const [dueDate, setDueDate] = useState(task.dueDate ?? '')
+  const [assignee, setAssignee] = useState(task.assignee ?? '')
+  const [labels, setLabels] = useState(normalizeTaskLabels(task.labels ?? []))
+  const [newLabelName, setNewLabelName] = useState('')
+  const [newLabelColor, setNewLabelColor] = useState('#2563eb')
+
+  const handleAddLabel = () => {
+    const trimmedName = newLabelName.trim()
+    if (!trimmedName) return
+
+    setLabels((current) => [
+      ...current,
+      { name: trimmedName, color: newLabelColor },
+    ])
+    setNewLabelName('')
+  }
+
+  const handleLabelChange = (index, field, value) => {
+    setLabels((current) =>
+      current.map((label, idx) =>
+        idx === index ? { ...label, [field]: value } : label
+      )
+    )
+  }
+
+  const handleRemoveLabel = (index) => {
+    setLabels((current) => current.filter((_, idx) => idx !== index))
+  }
+
+  const handleSave = () => {
+    onSave({
+      description,
+      dueDate: dueDate || null,
+      assignee,
+      labels,
+    })
+    onClose()
+  }
+
   return (
     <div className="task-detail-modal" role="dialog" aria-modal="true">
-      {/* TODO: build the real modal here — this placeholder just proves the wiring works */}
-      <div className="task-detail-modal__placeholder">
-        <p>Task detail modal — not built yet.</p>
-        <p>Selected task: {task.title}</p>
-        <button onClick={onClose}>Close</button>
+      <div className="task-detail-modal__content">
+        <header className="task-detail-modal__header">
+          <div>
+            <p className="task-detail-modal__task-id">{task.id}</p>
+            <h2>{task.title}</h2>
+          </div>
+          <button
+            className="task-detail-modal__close"
+            onClick={onClose}
+            aria-label="Close task details"
+          >
+            ×
+          </button>
+        </header>
+
+        <section className="task-detail-modal__section">
+          <label>
+            Description
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={4}
+            />
+          </label>
+        </section>
+
+        <section className="task-detail-modal__section task-detail-modal__grid">
+          <label>
+            Due date
+            <input
+              type="date"
+              value={dueDate || ''}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </label>
+
+          <label>
+            Assigned member
+            <input
+              type="text"
+              value={assignee}
+              onChange={(e) => setAssignee(e.target.value)}
+              placeholder="Enter assignee"
+            />
+          </label>
+        </section>
+
+        <section className="task-detail-modal__section">
+          <div className="task-detail-modal__section-header">
+            <div>
+              <h3>Labels</h3>
+              <p className="task-detail-modal__help">
+                Create or edit labels for this task.
+              </p>
+            </div>
+            <div className="task-detail-modal__label-preview">
+              <LabelBadge labels={labels} />
+            </div>
+          </div>
+
+          <div className="task-detail-modal__label-editor">
+            <label>
+              Label name
+              <input
+                type="text"
+                value={newLabelName}
+                onChange={(e) => setNewLabelName(e.target.value)}
+                placeholder="e.g. Front End"
+              />
+            </label>
+
+            <label>
+              Label color
+              <input
+                type="color"
+                value={newLabelColor}
+                onChange={(e) => setNewLabelColor(e.target.value)}
+              />
+            </label>
+
+            <button
+              type="button"
+              className="task-detail-modal__add-label"
+              onClick={handleAddLabel}
+              disabled={!newLabelName.trim()}
+            >
+              Add label
+            </button>
+          </div>
+
+          <div className="task-detail-modal__label-list">
+            {labels.length === 0 ? (
+              <p className="task-detail-modal__note">No labels yet.</p>
+            ) : (
+              labels.map((label, index) => (
+                <div key={`${label.name}-${index}`} className="task-detail-modal__label-row">
+                  <input
+                    type="text"
+                    value={label.name}
+                    onChange={(e) => handleLabelChange(index, 'name', e.target.value)}
+                    aria-label={`Label ${index + 1} name`}
+                  />
+                  <input
+                    type="color"
+                    value={label.color}
+                    onChange={(e) => handleLabelChange(index, 'color', e.target.value)}
+                    aria-label={`Label ${index + 1} color`}
+                  />
+                  <button
+                    type="button"
+                    className="task-detail-modal__remove-label"
+                    onClick={() => handleRemoveLabel(index)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <footer className="task-detail-modal__actions">
+          <button type="button" onClick={handleSave} className="task-detail-modal__save">
+            Save
+          </button>
+          <button type="button" onClick={onClose} className="task-detail-modal__cancel">
+            Cancel
+          </button>
+          <button type="button" onClick={onDelete} className="task-detail-modal__delete">
+            Delete task
+          </button>
+        </footer>
       </div>
     </div>
   )
