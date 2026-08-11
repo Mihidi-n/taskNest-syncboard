@@ -1,29 +1,24 @@
-/* TaskDetailModal — starter styles, extend freely.
-   If you switch to a native <dialog>, style it (and its ::backdrop)
-   directly instead of this wrapper div.
-   Tokens available from src/styles/index.css:
-   --color-surface, --color-border, --color-text, --color-text-muted,
-   --color-accent, --radius-md, --shadow-card-hover, --font-display,
-   --font-body */
-
 .task-detail-modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  max-width: 680px;
+  width: 90vw;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.task-detail-modal::backdrop {
   background: rgba(18, 28, 59, 0.45);
-  z-index: 50;
-  padding: 16px;
 }
 
 .task-detail-modal__content {
-  width: min(680px, 100%);
+  width: 100%;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card-hover);
   padding: 24px;
+  box-sizing: border-box;
 }
 
 .task-detail-modal__header {
@@ -90,10 +85,39 @@
   background: var(--color-surface);
   color: var(--color-text);
   font: inherit;
+  box-sizing: border-box;
 }
 
 .task-detail-modal textarea {
   resize: vertical;
+}
+
+.task-detail-modal__label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+
+.task-detail-modal__dates {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.task-detail-modal__date-field {
+  flex: 1;
+}
+
+.task-detail-modal__date-field .react-datepicker-wrapper {
+  width: 100%;
+}
+
+.task-detail-modal__error {
+  color: #c0392b;
+  font-size: 13px;
+  margin-top: 8px;
 }
 
 .task-detail-modal__label-editor {
@@ -143,6 +167,7 @@
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: 20px;
 }
 
 .task-detail-modal__save,
@@ -176,7 +201,7 @@
   margin: 0;
 }
 
-.task-detail-modal__label-preview {
+.task-detail-modal__actions-right {
   display: flex;
-  align-items: center;
+  gap: 8px;
 }
