@@ -1,4 +1,75 @@
 import './BoardSwitcher.css'
+import { useState, useRef, useEffect } from 'react'
+
+export default function BoardSwitcher({ boards, activeBoardId, onSelect }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+  const ref = useRef(null)
+
+  const activeBoard = boards.find(b => b.id === activeBoardId)
+
+  const filteredBoards = boards.filter(board => 
+    board.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Close when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (ref.current && !ref.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="board-switcher" ref={ref}>
+      {/* Current board name button */}
+      <button 
+        className="board-switcher__current" 
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {activeBoard?.name || "Select Board"}
+        <span className="arrow">{isOpen ? "▲" : "▼"}</span>
+      </button>
+
+      {/* Dropdown with filter + list */}
+      {isOpen && (
+        <div className="board-switcher__dropdown">
+          <input 
+            type="text"
+            placeholder="Filter boards..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="board-switcher__search"
+            autoFocus
+          />
+
+          <div className="board-switcher__list">
+            <div className="board-switcher__section-title">RECENT BOARDS</div>
+            
+            {filteredBoards.length === 0 && (
+              <div className="board-switcher__empty">No boards found</div>
+            )}
+            {filteredBoards.map(board => (
+              <button
+                key={board.id}
+                className={`board-switcher__item ${board.id === activeBoardId ? 'active' : ''}`}
+                onClick={() => {
+                  onSelect(board.id)
+                  setIsOpen(false)
+                }}
+              >
+                {board.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 /**
  * BoardSwitcher
@@ -27,11 +98,4 @@ import './BoardSwitcher.css'
  * --color-border, --radius-sm, --shadow-card, --font-body, --font-mono)
  * so this matches the rest of the app.
  */
-export default function BoardSwitcher({ boards, activeBoardId, onSelect, onCreate }) {
-  return (
-    <div className="board-switcher">
-      {/* TODO: build the board switcher UI here */}
-      <span className="board-switcher__placeholder">Board switcher — not built yet</span>
-    </div>
-  )
-}
+
