@@ -1,25 +1,207 @@
-/* TaskDetailModal — starter styles, extend freely.
-   If you switch to a native <dialog>, style it (and its ::backdrop)
-   directly instead of this wrapper div.
-   Tokens available from src/styles/index.css:
-   --color-surface, --color-border, --color-text, --color-text-muted,
-   --color-accent, --radius-md, --shadow-card-hover, --font-display,
-   --font-body */
-
 .task-detail-modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(18, 28, 59, 0.45);
-  z-index: 50;
+  border: none;
+  border-radius: 8px;
+  padding: 0;
+  max-width: 680px;
+  width: 90vw;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-.task-detail-modal__placeholder {
+.task-detail-modal::backdrop {
+  background: rgba(18, 28, 59, 0.45);
+}
+
+.task-detail-modal__content {
+  width: 100%;
   background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 24px;
   box-shadow: var(--shadow-card-hover);
-  max-width: 90vw;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.task-detail-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.task-detail-modal__task-id {
+  margin: 0 0 6px;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.task-detail-modal__close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.task-detail-modal__section {
+  margin-bottom: 18px;
+}
+
+.task-detail-modal__section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.task-detail-modal__help {
+  margin: 6px 0 0;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.task-detail-modal__grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.task-detail-modal label {
+  display: block;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.task-detail-modal input,
+.task-detail-modal textarea {
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.task-detail-modal textarea {
+  resize: vertical;
+}
+
+.task-detail-modal__label {
+  display: block;
+  font-weight: 600;
+  font-size: 13px;
+  margin-bottom: 6px;
+  margin-top: 12px;
+}
+
+.task-detail-modal__dates {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.task-detail-modal__date-field {
+  flex: 1;
+}
+
+.task-detail-modal__date-field .react-datepicker-wrapper {
+  width: 100%;
+}
+
+.task-detail-modal__error {
+  color: #c0392b;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.task-detail-modal__label-editor {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1.5fr 0.75fr auto;
+  align-items: end;
+}
+
+.task-detail-modal__add-label {
+  border: 1px solid var(--color-border);
+  background: var(--color-accent);
+  color: white;
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  cursor: pointer;
+}
+
+.task-detail-modal__add-label:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.task-detail-modal__label-list {
+  display: grid;
+  gap: 10px;
+}
+
+.task-detail-modal__label-row {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr 82px auto;
+  align-items: center;
+}
+
+.task-detail-modal__remove-label {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.task-detail-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+
+.task-detail-modal__save,
+.task-detail-modal__cancel,
+.task-detail-modal__delete {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.task-detail-modal__save {
+  background: var(--color-accent);
+  color: white;
+}
+
+.task-detail-modal__cancel {
+  background: transparent;
+  color: var(--color-text);
+}
+
+.task-detail-modal__delete {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.task-detail-modal__note {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  margin: 0;
+}
+
+.task-detail-modal__actions-right {
+  display: flex;
+  gap: 8px;
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ColumnMenu from './ColumnMenu'
 import TaskCard from './TaskCard'
 import './Column.css'
@@ -6,7 +6,8 @@ import './Column.css'
 /**
  * Column — holds one lane (To Do / Doing / Done) worth of TaskCards,
  * the inline "add task" affordance, the drop target for drag/drop,
- * and (via ColumnMenu) rename/delete for the list itself.
+ * an editable title (click to rename), and a delete button (via
+ * ColumnMenu) for the list itself.
  */
 export default function Column({
   column,
@@ -21,6 +22,43 @@ export default function Column({
   const [isOver, setIsOver] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
   const [isAdding, setIsAdding] = useState(false)
+
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState(column.title)
+  const titleInputRef = useRef(null)
+
+  useEffect(() => {
+    if (isEditingTitle) {
+      titleInputRef.current?.focus()
+      titleInputRef.current?.select()
+    }
+  }, [isEditingTitle])
+
+  function startEditingTitle() {
+    setTitleDraft(column.title)
+    setIsEditingTitle(true)
+  }
+
+  function commitTitle() {
+    const trimmed = titleDraft.trim()
+    if (trimmed && trimmed !== column.title) {
+      onRenameColumn(column.id, trimmed)
+    } else {
+      setTitleDraft(column.title)
+    }
+    setIsEditingTitle(false)
+  }
+
+  function handleTitleKeyDown(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      commitTitle()
+    }
+    if (e.key === 'Escape') {
+      setTitleDraft(column.title)
+      setIsEditingTitle(false)
+    }
+  }
 
   function handleDragOver(e) {
     e.preventDefault()
@@ -50,12 +88,30 @@ export default function Column({
       onDrop={handleDrop}
     >
       <header className="column__header">
-        <h2 className="column__title">{column.title}</h2>
+        {isEditingTitle ? (
+          <input
+            ref={titleInputRef}
+            className="column__title-input"
+            value={titleDraft}
+            onChange={(e) => setTitleDraft(e.target.value)}
+            onBlur={commitTitle}
+            onKeyDown={handleTitleKeyDown}
+            maxLength={60}
+          />
+        ) : (
+          <h2
+            className="column__title"
+            onClick={startEditingTitle}
+            title="Click to rename"
+          >
+            {column.title}
+          </h2>
+        )}
+
         <div className="column__header-actions">
           <span className="column__count">{tasks.length}</span>
           <ColumnMenu
             column={column}
-            onRename={(title) => onRenameColumn(column.id, title)}
             onDelete={() => onDeleteColumn(column.id)}
           />
         </div>
