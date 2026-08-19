@@ -10,28 +10,7 @@ real Trello feel. There is **no backend, no database, and no login yet** —
 those are M2 and M3. Tasks reset on page refresh; that's expected at this
 stage, not a bug.
 
-## Folder-by-folder
 
-```
-collabboard/
-├── index.html              Vite's entry HTML — just a <div id="root">, don't edit unless changing the page title/favicon
-├── package.json             Dependency list + npm scripts (dev/build/preview)
-├── vite.config.js           Build tool config — plugin-react + dev server port
-├── .gitignore                Keeps node_modules/dist out of git
-├── GIT_WORKFLOW.md           How your team should branch/commit/PR (read this before Session 1)
-├── docs/
-│   ├── wireframe.svg          Low-fidelity wireframe — required M1 deliverable
-│   └── component-tree.md      Component hierarchy + state ownership — required M1 deliverable
-└── src/
-    ├── main.jsx               React bootstrap — mounts <App /> into index.html's #root
-    ├── App.jsx / App.css      Page shell: header bar + <Board />
-    ├── styles/index.css       Global design tokens (colors, fonts, spacing) as CSS variables
-    ├── data/mockData.js       Fake tasks/columns/tags — shaped like the future API response on purpose
-    └── components/
-        ├── Board.jsx / Board.css       Owns all task state; renders one <Column> per column
-        ├── Column.jsx / Column.css     One lane (To Do/Doing/Done); drop target; "add card" form
-        └── TaskCard.jsx / TaskCard.css One draggable task card
-```
 
 **Why mock data is shaped the way it is:** `src/data/mockData.js` mirrors
 what a Mongoose `Task` document + Express endpoint will likely return in
@@ -45,7 +24,7 @@ just swapping `useState(initialTasks)` for a `useEffect` that fetches.
 Requires Node.js 18+ (check with `node -v`).
 
 ```bash
-cd collabboard
+
 npm install
 npm run dev
 ```
