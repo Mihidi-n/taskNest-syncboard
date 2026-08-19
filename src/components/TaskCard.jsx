@@ -45,9 +45,29 @@ export default function TaskCard({ task, onDragStart, onDelete, onOpen }) {
         <div className="task-card__metadata">
           <LabelBadge labels={task.labels} />
 
-          {task.dueDate && (
+          {task.startDate && task.dueDate && (
+            <span className="task-card__dates">
+              <span className="task-card__start-date">
+                {task.startDate}
+              </span>
+
+              <span className="task-card__date-separator">–</span>
+
+              <span className="task-card__due-date">
+                {task.dueDate}
+              </span>
+            </span>
+          )}
+
+          {!task.startDate && task.dueDate && (
             <span className="task-card__due-date">
-              📅 {task.dueDate}
+              {task.dueDate}
+            </span>
+          )}
+
+          {task.startDate && !task.dueDate && (
+            <span className="task-card__start-date">
+              {task.startDate}
             </span>
           )}
         </div>

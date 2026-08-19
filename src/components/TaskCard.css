@@ -71,6 +71,32 @@
   gap: 8px;
 }
 
+.task-card__dates {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.task-card__start-date {
+  font-size: 11px;
+  color: #9B2C2C;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.task-card__date-separator {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  line-height: 1;
+}
+
+.task-card__due-date {
+  font-size: 11px;
+  color: #9B2C2C;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 /* Label container */
 .task-card__labels {
   display: flex;
