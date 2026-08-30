@@ -1,0 +1,254 @@
+.app {
+  min-height: 100%;
+  background: #f4f5f7;
+}
+
+
+
+.app__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  background: var(--color-navy, #091e42);
+  color: white;
+}
+
+.app__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app__brand-mark {
+  font-family: var(--font-mono, monospace);
+  font-weight: 500;
+  font-size: 13px;
+  background: var(--color-accent, #0052cc);
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.app__title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.app__subtitle {
+  font-size: 12px;
+  color: #aeb7d6;
+  margin: 2px 0 0;
+}
+
+
+.app__search {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm, 4px);
+  border: 1px solid var(--color-border, #dfe1e6);
+  background: white;
+  font-size: 13px;
+  width: 240px;
+  margin: 0 12px;
+  color: #172b4d;
+  box-sizing: border-box;
+}
+
+.app__search:focus {
+  outline: none;
+  border-color: var(--color-accent, #0052cc);
+  box-shadow: 0 0 0 2px rgba(0, 82, 204, 0.15);
+}
+
+/* =========================
+   HEADER ACTIONS
+   ========================= */
+
+.app__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Create Board Button */
+.app__create-btn {
+  font-family: var(--font-body, sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: white;
+  background: var(--color-accent, #0052cc);
+  border: none;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+}
+
+.app__create-btn:hover {
+  filter: brightness(1.08);
+}
+
+/* Share Button */
+.app__share-trigger {
+  font-family: var(--font-body, sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: white;
+  background: var(--color-accent, #0052cc);
+  border: none;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+}
+
+.app__share-trigger:hover {
+  filter: brightness(1.08);
+}
+
+/* Badge */
+.app__badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: #aeb7d6;
+  border: 1px solid var(--color-navy-soft, #253858);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+/* =========================
+   TOOLBAR
+   ========================= */
+
+.app__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 32px;
+  background: var(--color-surface, #ffffff);
+  border-bottom: 1px solid var(--color-border, #dfe1e6);
+}
+
+/* =========================
+   CREATE BOARD MODAL
+   ========================= */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background: white;
+  padding: 24px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: calc(100% - 32px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+}
+
+.modal h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+  color: #172b4d;
+  font-weight: 600;
+}
+
+/* Modal Input */
+.modal__input {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #dfe1e6;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+}
+
+.modal__input:focus {
+  outline: none;
+  border-color: var(--color-accent, #0052cc);
+}
+
+
+.modal__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.modal__create {
+  background: var(--color-accent, #0052cc);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal__create:hover {
+  filter: brightness(1.08);
+}
+
+.modal__cancel {
+  background: #f4f5f7;
+  color: #172b4d;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal__cancel:hover {
+  background: #e4e6ea;
+}
+
+
+
+@media (max-width: 640px) {
+  .app__header {
+    padding: 14px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .app__search {
+    width: 100%;
+    margin: 0;
+    order: 3;
+  }
+
+  .app__toolbar {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+  }
+
+  .app__badge {
+    display: none;
+  }
+
+  .app__header-actions {
+    gap: 8px;
+  }
+
+  .modal {
+    width: calc(100% - 32px);
+  }
+}
