@@ -31,22 +31,74 @@ import { serializeColumn } from '../serialize.js'
  */
 
 export async function listColumns(req, res) {
-  // TODO(Owner: Column API) — Column.find({ boardId: req.params.boardId }).sort('order')
-  // (this handler is mounted at GET /api/columns/board/:boardId)
-  res.status(501).json({ error: 'listColumns not implemented yet — see controllers/columnController.js' })
+ try {
+    const { boardId } = req.params
+    const columns = await Column.find({ boardId }).sort('order')
+    res.json(columns.map(serializeColumn))
+  } catch (err) {
+    res.status(500).json({ message: "Error listing columns", error: err })
+  }
 }
 
 export async function createColumn(req, res) {
-  // TODO(Owner: Column API) — see worked example above.
-  res.status(501).json({ error: 'createColumn not implemented yet — see controllers/columnController.js' })
+  try {
+    const { boardId } = req.params
+    const { title } = req.body
+
+    if (!title?.trim()) {
+      return res.status(400).json({ error: 'title is required' })
+    }
+
+    const count = await Column.countDocuments({ boardId })
+    const column = await Column.create({
+      boardId,
+      title: title.trim(),
+      order: count
+    })
+
+    res.status(201).json(serializeColumn(column))
+  } catch (err) {
+    res.status(500).json({ message: "Error creating column", error: err })
+  }
 }
 
 export async function renameColumn(req, res) {
-  // TODO(Owner: Column API) — Column.findByIdAndUpdate(req.params.id, { title: req.body.title })
-  res.status(501).json({ error: 'renameColumn not implemented yet — see controllers/columnController.js' })
+   try {
+    const { id } = req.params
+    const { title } = req.body
+
+    if (!title?.trim()) {
+      return res.status(400).json({ error: 'title is required' })
+    }
+
+    const column = await Column.findByIdAndUpdate(
+      id,
+      { title: title.trim() },
+      { new: true }
+    )
+
+    if (!column) {
+      return res.status(404).json({ error: 'Column not found' })
+    }
+
+    res.json(serializeColumn(column))
+  } catch (err) {
+    res.status(500).json({ message: "Error renaming column", error: err })
+  }
 }
 
 export async function deleteColumn(req, res) {
-  // TODO(Owner: Column API) — delete the column, then Task.deleteMany({ columnId: req.params.id })
-  res.status(501).json({ error: 'deleteColumn not implemented yet — see controllers/columnController.js' })
+  try {
+    const { id } = req.params
+
+    const column = await Column.findByIdAndDelete(id)
+    if (!column) {
+      return res.status(404).json({ error: 'Column not found' })
+    }
+
+    await Task.deleteMany({ columnId: id })
+    res.json({ message: "Column deleted" })
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting column", error: err })
+  }
 }
