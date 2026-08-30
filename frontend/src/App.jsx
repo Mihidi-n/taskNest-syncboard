@@ -6,6 +6,9 @@ import TaskDetailModal from './components/TaskDetailModal'
 import ShareBoardModal from './components/ShareBoardModal'
 import { useBoards } from './hooks/useBoards'
 import './App.css'
+import { Routes, Route } from 'react-router-dom'
+import LoginPage from './components/LoginPage'
+import RegisterPage from './components/RegisterPage'
 
 export default function App() {
   const {
@@ -55,7 +58,11 @@ export default function App() {
     setShowCreateBoard(false)
   }
 
-  return (
+    return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/*" element={
     <div className="app">
       {}
       <header className="app__header">
@@ -196,6 +203,8 @@ export default function App() {
           onClose={() => setIsShareOpen(false)}
         />
       )}
-    </div>
+        </div>
+      } />
+    </Routes>
   )
 }
