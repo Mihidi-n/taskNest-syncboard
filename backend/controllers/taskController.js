@@ -69,8 +69,72 @@ export async function updateTask(req, res) {
 }
 
 export async function moveTask(req, res) {
-  // TODO(Owner: Task API) — see "Notes on move" above.
-  res.status(501).json({ error: 'moveTask not implemented yet — see controllers/taskController.js' })
+  const { id } = req.params
+  const { columnId, order } = req.body
+
+  // Find the task
+  const task = await Task.findById(id)
+  if (!task) return res.status(404).json({ error: 'task not found' })
+
+  // Find destination column
+  const destColumn = await Column.findById(columnId)
+  if (!destColumn) return res.status(404).json({ error: 'column not found' })
+
+  const srcColumnId = task.columnId
+  const isMovingWithinColumn = srcColumnId.equals(columnId)
+
+  if (isMovingWithinColumn) {
+    // Moving within the same column: reorder only
+    const tasks = await Task.find({ columnId: srcColumnId }).sort('order')
+    const currentIndex = tasks.findIndex((t) => t._id.equals(id))
+    tasks.splice(currentIndex, 1)
+
+    // Clamp the requested order to valid range [0, tasks.length]
+    const newOrder = Math.max(0, Math.min(order, tasks.length))
+    tasks.splice(newOrder, 0, task)
+
+    // Renumber all tasks sequentially
+    for (let i = 0; i < tasks.length; i++) {
+      tasks[i].order = i
+      await tasks[i].save()
+    }
+  } else {
+    // Moving to a different column
+    // 1. Renumber tasks in source column (remove current task)
+    const srcTasks = await Task.find({ columnId: srcColumnId }).sort('order')
+    const srcIndex = srcTasks.findIndex((t) => t._id.equals(id))
+    srcTasks.splice(srcIndex, 1)
+
+    for (let i = 0; i < srcTasks.length; i++) {
+      srcTasks[i].order = i
+      await srcTasks[i].save()
+    }
+
+    // 2. Prepare destination column tasks and insert the moved task
+    const destTasks = await Task.find({ columnId: columnId }).sort('order')
+
+    // Clamp the requested order to valid range [0, destTasks.length]
+    const newOrder = Math.max(0, Math.min(order, destTasks.length))
+
+    // Update the task's destination column and board
+    task.columnId = destColumn._id
+    task.boardId = destColumn.boardId
+    task.order = newOrder
+
+    // Renumber destination tasks (insert moved task at newOrder)
+    for (let i = 0; i < destTasks.length; i++) {
+      if (i < newOrder) {
+        destTasks[i].order = i
+      } else {
+        destTasks[i].order = i + 1
+      }
+      await destTasks[i].save()
+    }
+
+    await task.save()
+  }
+
+  res.json(serializeTask(task))
 }
 
 export async function deleteTask(req, res) {
