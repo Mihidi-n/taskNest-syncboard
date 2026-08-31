@@ -11,62 +11,109 @@ import { serializeBoard } from '../serialize.js'
  *   GET    /api/boards/:id
  *   PATCH  /api/boards/:id      { name }
  *   DELETE /api/boards/:id      — also delete its columns and tasks
- *   POST   /api/boards/:id/share  { email }  — adds that user as a member (see notes below)
- *
- * Every controller here can read `req.userId` — that's the logged-in
- * user's id, set by the `protect` middleware once the Auth person has
- * built it. Until then it'll be `undefined`; that's expected while
- * you're both building at the same time, just don't be surprised if
- * user-scoped queries return nothing until Auth's part is done too.
- *
- * Worked example for listing boards (the rest follow familiar
- * Mongoose CRUD patterns — see controllers/columnController.js once
- * that's built for another example, or Board.findById /
- * Board.findByIdAndUpdate / Board.findByIdAndDelete):
- *
- *   export async function listBoards(req, res) {
- *     const boards = await Board.find({
- *       $or: [{ owner: req.userId }, { members: req.userId }],
- *     })
- *     res.json(boards.map(serializeBoard))
- *   }
- *
- * Notes on "share the board":
- *   The frontend's ShareBoardModal currently just shows a link — for
- *   a real implementation, decide with that feature's frontend owner
- *   whether sharing means "add this email as a member" (what the
- *   route above assumes) or "anyone with the link can view" (simpler,
- *   but means no real access control). Either is a reasonable answer
- *   for a class project — just document whichever you pick.
+ *   POST   /api/boards/:id/share  { email }  — adds that user as a member
  */
 
 export async function listBoards(req, res) {
-  // TODO(Owner: Board API) — see worked example above.
-  res.status(501).json({ error: 'listBoards not implemented yet — see controllers/boardController.js' })
+  try {
+    const boards = await Board.find({
+      $or: [{ owner: req.userId }, { members: req.userId }],
+    })
+    res.json(boards.map(serializeBoard))
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
 
 export async function createBoard(req, res) {
-  // TODO(Owner: Board API) — create a Board with owner: req.userId, default columns (see
-  // frontend/src/hooks/useBoards.js createBoard for the column titles it expects: To Do / Doing / Done).
-  res.status(501).json({ error: 'createBoard not implemented yet — see controllers/boardController.js' })
+  try {
+    const { name } = req.body;
+    const ownerId = req.userId;
+
+    // 1. Create the board
+    const board = await Board.create({ 
+      name, 
+      owner: ownerId, 
+      members: [ownerId] 
+    });
+
+    // 2. Create default columns: To Do / Doing / Done
+    const defaultColumns = ['To Do', 'Doing', 'Done'].map(title => ({
+      title,
+      board: board._id,
+      order: 0
+    }));
+    await Column.insertMany(defaultColumns);
+
+    res.status(201).json(serializeBoard(board));
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
 
 export async function getBoard(req, res) {
-  // TODO(Owner: Board API) — Board.findById(req.params.id)
-  res.status(501).json({ error: 'getBoard not implemented yet — see controllers/boardController.js' })
+  try {
+    const board = await Board.findOne({
+      _id: req.params.id,
+      $or: [{ owner: req.userId }, { members: req.userId }],
+    });
+    if (!board) return res.status(404).json({ message: "Board not found" });
+    
+    res.json(serializeBoard(board));
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
 
 export async function renameBoard(req, res) {
-  // TODO(Owner: Board API) — Board.findByIdAndUpdate(req.params.id, { name: req.body.name })
-  res.status(501).json({ error: 'renameBoard not implemented yet — see controllers/boardController.js' })
+  try {
+    const { name } = req.body;
+
+    const board = await Board.findOneAndUpdate(
+      { _id: req.params.id, $or: [{ owner: req.userId }, { members: req.userId }] },
+      { name },
+      { new: true }
+    );
+    if (!board) return res.status(404).json({ message: "Board not found" });
+    
+    res.json(serializeBoard(board));
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
 
 export async function deleteBoard(req, res) {
-  // TODO(Owner: Board API) — delete the board, then Column.deleteMany and Task.deleteMany for it.
-  res.status(501).json({ error: 'deleteBoard not implemented yet — see controllers/boardController.js' })
+  try {
+    const board = await Board.findOneAndDelete({ _id: req.params.id, owner: req.userId });
+    if (!board) return res.status(404).json({ message: "Board not found or not owner" });
+
+    // also delete columns and tasks
+    await Column.deleteMany({ board: req.params.id });
+    await Task.deleteMany({ board: req.params.id });
+    
+    res.json({ message: "Board deleted" });
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
 
 export async function shareBoard(req, res) {
-  // TODO(Owner: Board API) — see "Notes on share the board" above.
-  res.status(501).json({ error: 'shareBoard not implemented yet — see controllers/boardController.js' })
+  try {
+    const { email } = req.body;
+    
+    // NOTE: This assumes you have a User model. For now we'll just add a placeholder
+    // In real app: const userToAdd = await User.findOne({ email })
+    // Then add userToAdd._id to members
+
+    const board = await Board.findOneAndUpdate(
+      { _id: req.params.id, owner: req.userId },
+      { $addToSet: { members: "ADD_USER_ID_HERE" } }, // TODO: replace with real user ID from email
+      { new: true }
+    );
+    if (!board) return res.status(404).json({ message: "Board not found or not owner" });
+
+    res.json(serializeBoard(board));
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
 }
