@@ -6,15 +6,18 @@ import { serializeTask } from '../serialize.js'
  * OWNER: Task API
  * Routes already wired in routes/taskRoutes.js (all behind `protect`):
  *   GET    /api/tasks/board/:boardId        — every task on the board
- *   POST   /api/tasks/column/:columnId      { title, description?, dueDate?, labels?, assignee? }
- *   PATCH  /api/tasks/:id                   { title?, description?, dueDate?, labels?, assignee? }
+ *   POST   /api/tasks/column/:columnId      { title, description?, startDate?, dueDate?, labels?, assignee? }
+ *   PATCH  /api/tasks/:id                   { title?, description?, startDate?, dueDate?, labels?, assignee? }
  *   PATCH  /api/tasks/:id/move              { columnId, order }
  *   DELETE /api/tasks/:id
  *
- * Corresponds to the frontend's TaskDetailModal (due date + description)
- * and LabelBadge features — once both sides are done, TaskDetailModal's
- * onSave callback calls PATCH /api/tasks/:id with whatever fields
- * changed.
+ * labels is an array of { name, color } objects, e.g.
+ * [{ name: 'High', color: '#2563eb' }] — not plain strings.
+ *
+ * Corresponds to the frontend's TaskDetailModal (start date, due date,
+ * description) and LabelBadge features — once both sides are done,
+ * TaskDetailModal's onSave callback calls PATCH /api/tasks/:id with
+ * whatever fields changed.
  *
  * Worked example for creating a task (update/delete are one-liners —
  * see columnController.js for the same findByIdAndUpdate /
@@ -22,7 +25,7 @@ import { serializeTask } from '../serialize.js'
  *
  *   export async function createTask(req, res) {
  *     const { columnId } = req.params
- *     const { title, description, dueDate, labels, assignee } = req.body
+ *     const { title, description, startDate, dueDate, labels, assignee } = req.body
  *     if (!title?.trim()) return res.status(400).json({ error: 'title is required' })
  *
  *     const column = await Column.findById(columnId)
@@ -34,6 +37,7 @@ import { serializeTask } from '../serialize.js'
  *       boardId: column.boardId,
  *       title: title.trim(),
  *       description: description || '',
+ *       startDate: startDate || null,
  *       dueDate: dueDate || null,
  *       labels: labels || [],
  *       assignee: assignee || '',
@@ -51,7 +55,6 @@ import { serializeTask } from '../serialize.js'
  *   planning doc if your group still has that reference around, or
  *   ask in the group chat — this one's fiddlier than the others.
  */
-
 export async function listTasksForBoard(req, res) {
   try {
     const tasks = await Task.find({ boardId: req.params.boardId }).sort({ order: 1 })
@@ -64,7 +67,7 @@ export async function listTasksForBoard(req, res) {
 export async function createTask(req, res) {
   try {
     const { columnId } = req.params
-    const { title, description, dueDate, labels, assignee } = req.body
+    const { title, description, startDate, dueDate, labels, assignee } = req.body
 
     if (!title?.trim()) {
       return res.status(400).json({ error: 'title is required' })
@@ -76,16 +79,17 @@ export async function createTask(req, res) {
     }
 
     const count = await Task.countDocuments({ columnId })
-    const task = await Task.create({
-      columnId,
-      boardId: column.boardId,
-      title: title.trim(),
-      description: description || '',
-      dueDate: dueDate || null,
-      labels: labels || [],
-      assignee: assignee || '',
-      order: count,
-    })
+   const task = await Task.create({
+  columnId,
+  boardId: column.boardId,
+  title: title.trim(),
+  description: description || '',
+  startDate: startDate || null,
+  dueDate: dueDate || null,
+  labels: labels || [],
+  assignee: assignee || '',
+  order: count,
+})
 
     res.status(201).json(serializeTask(task))
   } catch (err) {
@@ -95,7 +99,7 @@ export async function createTask(req, res) {
 
 export async function updateTask(req, res) {
   try {
-    const { title, description, dueDate, labels, assignee } = req.body
+    const { title, description, startDate, dueDate, labels, assignee } = req.body
     const updates = {}
 
     if (title !== undefined) {
@@ -103,6 +107,7 @@ export async function updateTask(req, res) {
       updates.title = title.trim()
     }
     if (description !== undefined) updates.description = description
+    if (startDate !== undefined) updates.startDate = startDate
     if (dueDate !== undefined) updates.dueDate = dueDate
     if (labels !== undefined) updates.labels = labels
     if (assignee !== undefined) updates.assignee = assignee
