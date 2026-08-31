@@ -109,7 +109,7 @@ export default function App() {
                   </button>
 
                   <span className="app__badge">
-                    mock data · no backend yet
+                    
                   </span>
                 </div>
               </header>
