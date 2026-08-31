@@ -10,8 +10,14 @@ const taskSchema = new mongoose.Schema(
     boardId: { type: mongoose.Schema.Types.ObjectId, ref: 'Board', required: true },
     title: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
+    startDate: { type: Date, default: null },
     dueDate: { type: Date, default: null },
-    labels: [{ type: String }], // e.g. ['backend', 'bug'] — see tags in frontend/src/data/mockData.js
+    labels: [
+    {
+    name: { type: String },
+    color: { type: String },
+   },
+], // e.g. [{ name: 'High', color: '#2563eb' }]
     assignee: { type: String, default: '' },
     order: { type: Number, required: true, default: 0 },
   },
