@@ -53,27 +53,151 @@ import { serializeTask } from '../serialize.js'
  */
 
 export async function listTasksForBoard(req, res) {
-  // TODO(Owner: Task API) — Task.find({ boardId: req.params.boardId })
-  // (this handler is mounted at GET /api/tasks/board/:boardId)
-  res.status(501).json({ error: 'listTasksForBoard not implemented yet — see controllers/taskController.js' })
+  try {
+    const tasks = await Task.find({ boardId: req.params.boardId }).sort({ order: 1 })
+    res.status(200).json(tasks.map(serializeTask))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 }
 
 export async function createTask(req, res) {
-  // TODO(Owner: Task API) — see worked example above.
-  res.status(501).json({ error: 'createTask not implemented yet — see controllers/taskController.js' })
+  try {
+    const { columnId } = req.params
+    const { title, description, dueDate, labels, assignee } = req.body
+
+    if (!title?.trim()) {
+      return res.status(400).json({ error: 'title is required' })
+    }
+
+    const column = await Column.findById(columnId)
+    if (!column) {
+      return res.status(404).json({ error: 'column not found' })
+    }
+
+    const count = await Task.countDocuments({ columnId })
+    const task = await Task.create({
+      columnId,
+      boardId: column.boardId,
+      title: title.trim(),
+      description: description || '',
+      dueDate: dueDate || null,
+      labels: labels || [],
+      assignee: assignee || '',
+      order: count,
+    })
+
+    res.status(201).json(serializeTask(task))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 }
 
 export async function updateTask(req, res) {
-  // TODO(Owner: Task API) — Task.findByIdAndUpdate(req.params.id, req.body fields that were provided)
-  res.status(501).json({ error: 'updateTask not implemented yet — see controllers/taskController.js' })
-}
+  try {
+    const { title, description, dueDate, labels, assignee } = req.body
+    const updates = {}
 
+    if (title !== undefined) {
+      if (!title.trim()) return res.status(400).json({ error: 'title cannot be empty' })
+      updates.title = title.trim()
+    }
+    if (description !== undefined) updates.description = description
+    if (dueDate !== undefined) updates.dueDate = dueDate
+    if (labels !== undefined) updates.labels = labels
+    if (assignee !== undefined) updates.assignee = assignee
+
+    const task = await Task.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    })
+
+    if (!task) {
+      return res.status(404).json({ error: 'task not found' })
+    }
+
+    res.status(200).json(serializeTask(task))
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+}
 export async function moveTask(req, res) {
-  // TODO(Owner: Task API) — see "Notes on move" above.
-  res.status(501).json({ error: 'moveTask not implemented yet — see controllers/taskController.js' })
+  const { id } = req.params
+  const { columnId, order } = req.body
+
+  // Find the task
+  const task = await Task.findById(id)
+  if (!task) return res.status(404).json({ error: 'task not found' })
+
+  // Find destination column
+  const destColumn = await Column.findById(columnId)
+  if (!destColumn) return res.status(404).json({ error: 'column not found' })
+
+  const srcColumnId = task.columnId
+  const isMovingWithinColumn = srcColumnId.equals(columnId)
+
+  if (isMovingWithinColumn) {
+    // Moving within the same column: reorder only
+    const tasks = await Task.find({ columnId: srcColumnId }).sort('order')
+    const currentIndex = tasks.findIndex((t) => t._id.equals(id))
+    tasks.splice(currentIndex, 1)
+
+    // Clamp the requested order to valid range [0, tasks.length]
+    const newOrder = Math.max(0, Math.min(order, tasks.length))
+    tasks.splice(newOrder, 0, task)
+
+    // Renumber all tasks sequentially
+    for (let i = 0; i < tasks.length; i++) {
+      tasks[i].order = i
+      await tasks[i].save()
+    }
+  } else {
+    // Moving to a different column
+    // 1. Renumber tasks in source column (remove current task)
+    const srcTasks = await Task.find({ columnId: srcColumnId }).sort('order')
+    const srcIndex = srcTasks.findIndex((t) => t._id.equals(id))
+    srcTasks.splice(srcIndex, 1)
+
+    for (let i = 0; i < srcTasks.length; i++) {
+      srcTasks[i].order = i
+      await srcTasks[i].save()
+    }
+
+    // 2. Prepare destination column tasks and insert the moved task
+    const destTasks = await Task.find({ columnId: columnId }).sort('order')
+
+    // Clamp the requested order to valid range [0, destTasks.length]
+    const newOrder = Math.max(0, Math.min(order, destTasks.length))
+
+    // Update the task's destination column and board
+    task.columnId = destColumn._id
+    task.boardId = destColumn.boardId
+    task.order = newOrder
+
+    // Renumber destination tasks (insert moved task at newOrder)
+    for (let i = 0; i < destTasks.length; i++) {
+      if (i < newOrder) {
+        destTasks[i].order = i
+      } else {
+        destTasks[i].order = i + 1
+      }
+      await destTasks[i].save()
+    }
+
+    await task.save()
+  }
+
+  res.json(serializeTask(task))
 }
 
 export async function deleteTask(req, res) {
-  // TODO(Owner: Task API) — Task.findByIdAndDelete(req.params.id)
-  res.status(501).json({ error: 'deleteTask not implemented yet — see controllers/taskController.js' })
+  try {
+    const task = await Task.findByIdAndDelete(req.params.id)
+    if (!task) {
+      return res.status(404).json({ error: 'task not found' })
+    }
+    res.status(204).send()
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
 }
