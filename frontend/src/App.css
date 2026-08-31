@@ -252,3 +252,31 @@
     width: calc(100% - 32px);
   }
 }
+
+.app__loading {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a5265;
+  font-family: var(--font-body, inherit);
+}
+
+.app__user {
+  font-size: 13px;
+  color: #cfd6e6;
+  margin-left: 8px;
+}
+
+.app__logout {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.app__logout:hover {
+  background: rgba(255, 255, 255, 0.1);
+}

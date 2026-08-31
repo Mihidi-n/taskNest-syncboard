@@ -1,21 +1,21 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
 import './Auth.css'
 
-/**
- * RegisterPage
- * Pure front-end UI + validation for now — no backend call yet.
- * Once Role 1 (Auth) has a working /api/auth/register endpoint, swap
- * the TODO in handleSubmit for a real request (see api.js from Role 6).
- */
 export default function RegisterPage() {
+  const { register } = useAuth()
+  const navigate = useNavigate()
+
   const [form, setForm] = useState({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
   })
+  const [keepLoggedIn, setKeepLoggedIn] = useState(true)
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   function handleChange(e) {
@@ -24,6 +24,7 @@ export default function RegisterPage() {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
+    if (submitError) setSubmitError('')
   }
 
   function validate() {
@@ -61,10 +62,17 @@ export default function RegisterPage() {
     if (Object.keys(nextErrors).length > 0) return
 
     setIsSubmitting(true)
+    setSubmitError('')
     try {
-      // TODO (once Role 1 / Role 6 are ready): replace with a real call, e.g.
-      // await registerUser({ name: form.name, email: form.email, password: form.password })
-      console.log('Register submitted:', form)
+      await register({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        keepLoggedIn,
+      })
+      navigate('/')
+    } catch (err) {
+      setSubmitError(err.message)
     } finally {
       setIsSubmitting(false)
     }
@@ -80,6 +88,8 @@ export default function RegisterPage() {
 
         <h1 className="auth-title">Create an account</h1>
         <p className="auth-subtitle">Set up your boards in a couple of minutes.</p>
+
+        {submitError && <p className="auth-error-banner">{submitError}</p>}
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <div className="auth-field">
@@ -139,6 +149,15 @@ export default function RegisterPage() {
               <p className="auth-error-text">{errors.confirmPassword}</p>
             )}
           </div>
+
+          <label className="auth-checkbox">
+            <input
+              type="checkbox"
+              checked={keepLoggedIn}
+              onChange={(e) => setKeepLoggedIn(e.target.checked)}
+            />
+            Keep me logged in
+          </label>
 
           <button type="submit" className="auth-submit" disabled={isSubmitting}>
             {isSubmitting ? 'Creating account…' : 'Register'}

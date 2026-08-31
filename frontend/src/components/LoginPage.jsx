@@ -1,42 +1,39 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
 import './Auth.css'
 
-/**
- * LoginPage
- * Pure front-end UI + validation for now — no backend call yet.
- * Once Role 1 (Auth) has a working /api/auth/login endpoint, swap the
- * TODO in handleSubmit for a real request (see api.js from Role 6).
- */
 export default function LoginPage() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
   const [form, setForm] = useState({ email: '', password: '' })
+  const [keepLoggedIn, setKeepLoggedIn] = useState(true)
   const [errors, setErrors] = useState({})
+  const [submitError, setSubmitError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   function handleChange(e) {
     const { name, value } = e.target
     setForm((prev) => ({ ...prev, [name]: value }))
-    // clear that field's error as soon as the person starts fixing it
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: undefined }))
     }
+    if (submitError) setSubmitError('')
   }
 
   function validate() {
     const nextErrors = {}
-
     if (!form.email.trim()) {
       nextErrors.email = 'Email is required.'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
       nextErrors.email = 'Enter a valid email address.'
     }
-
     if (!form.password) {
       nextErrors.password = 'Password is required.'
     } else if (form.password.length < 6) {
       nextErrors.password = 'Password must be at least 6 characters.'
     }
-
     return nextErrors
   }
 
@@ -47,10 +44,12 @@ export default function LoginPage() {
     if (Object.keys(nextErrors).length > 0) return
 
     setIsSubmitting(true)
+    setSubmitError('')
     try {
-      // TODO (once Role 1 / Role 6 are ready): replace with a real call, e.g.
-      // await loginUser({ email: form.email, password: form.password })
-      console.log('Login submitted:', form)
+      await login({ email: form.email.trim(), password: form.password, keepLoggedIn })
+      navigate('/')
+    } catch (err) {
+      setSubmitError(err.message)
     } finally {
       setIsSubmitting(false)
     }
@@ -66,6 +65,8 @@ export default function LoginPage() {
 
         <h1 className="auth-title">Log in</h1>
         <p className="auth-subtitle">Welcome back — pick up where you left off.</p>
+
+        {submitError && <p className="auth-error-banner">{submitError}</p>}
 
         <form className="auth-form" onSubmit={handleSubmit} noValidate>
           <div className="auth-field">
@@ -95,6 +96,15 @@ export default function LoginPage() {
             />
             {errors.password && <p className="auth-error-text">{errors.password}</p>}
           </div>
+
+          <label className="auth-checkbox">
+            <input
+              type="checkbox"
+              checked={keepLoggedIn}
+              onChange={(e) => setKeepLoggedIn(e.target.checked)}
+            />
+            Keep me logged in
+          </label>
 
           <button type="submit" className="auth-submit" disabled={isSubmitting}>
             {isSubmitting ? 'Logging in…' : 'Log in'}
