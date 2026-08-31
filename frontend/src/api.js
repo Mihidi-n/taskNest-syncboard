@@ -1,23 +1,11 @@
+import { authFetch } from './authFetch.js'
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 async function request(endpoint, options = {}) {
-  const token = localStorage.getItem('token')
+  const response = await authFetch(`${API_BASE_URL}${endpoint}`, options)
 
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  }
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  })
-
-  // DELETE endpoints can return 204 with no response body
+  // Some DELETE endpoints return 204 with no body
   if (response.status === 204) {
     return null
   }
@@ -26,7 +14,9 @@ async function request(endpoint, options = {}) {
 
   if (!response.ok) {
     throw new Error(
-      data?.error || `Request failed with status ${response.status}`
+      data?.error ||
+        data?.message ||
+        `Request failed with status ${response.status}`
     )
   }
 

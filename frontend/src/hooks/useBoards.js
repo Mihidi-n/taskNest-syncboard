@@ -1,47 +1,94 @@
-import { useState } from 'react'
-import { initialBoards } from '../data/mockBoards'
-
+import { useEffect, useState } from 'react'
+import * as api from '../api.js'
+import { useAuth } from '../context/AuthContext.jsx'
 /**
- * useBoards — single source of truth for every board's columns and
- * tasks. This is shared plumbing, already wired into App.jsx. You
- * shouldn't need to edit this file to build your feature — everything
- * your component needs arrives as props. If you think you need
- * something this hook doesn't provide, ask in the group chat before
- * editing it; it's the one file everyone's feature depends on, so an
- * unplanned change here can break someone else's work.
- *
- * Still in-memory only (mock data, resets on refresh) — that's
- * expected until M3 wires up real persistence.
+ * useBoards — connects board, column, and task actions
+ * to the backend API and keeps the frontend state in sync.
  */
 export function useBoards() {
-  const [boards, setBoards] = useState(initialBoards)
-  const [activeBoardId, setActiveBoardId] = useState(initialBoards[0].id)
+  const { user } = useAuth()
 
-  const activeBoard = boards.find((b) => b.id === activeBoardId) ?? boards[0]
+  const [boards, setBoards] = useState([])
+  const [activeBoardId, setActiveBoardId] = useState(null)
 
+  const activeBoard =
+    boards.find((b) => b.id === activeBoardId) ??
+    boards[0] ?? {
+      id: '',
+      name: '',
+      columns: [],
+      tasks: [],
+    }
   function updateActiveBoard(updater) {
     setBoards((prev) =>
       prev.map((b) => (b.id === activeBoardId ? updater(b) : b))
     )
   }
 
+  useEffect(() => {
+    if (!user) {
+      setBoards([])
+      setActiveBoardId(null)
+      return
+    }
+    async function loadBoards() {
+      try {
+        const boardList = await api.getBoards()
+
+        const boardsWithData = await Promise.all(
+          boardList.map(async (board) => {
+            const [columns, tasks] = await Promise.all([
+              api.getColumns(board.id),
+              api.getTasks(board.id),
+            ])
+
+            return {
+              ...board,
+              columns,
+              tasks,
+            }
+          })
+        )
+
+        setBoards(boardsWithData)
+
+        if (boardsWithData.length > 0) {
+          setActiveBoardId(boardsWithData[0].id)
+        } else {
+          setActiveBoardId(null)
+        }
+      } catch (error) {
+        console.error('Failed to load boards:', error)
+      }
+    }
+
+    loadBoards()
+  }, [user])
   // ---- Boards ----
 
-  function createBoard(name) {
-    const id = `board-${Date.now()}`
-    const board = {
-      id,
-      name,
-      columns: [
-        { id: 'col-todo', title: 'To Do' },
-        { id: 'col-doing', title: 'Doing' },
-        { id: 'col-done', title: 'Done' },
-      ],
-      tasks: [],
+  async function createBoard(name) {
+    try {
+      const newBoard = await api.createBoard(name)
+
+      const [columns, tasks] = await Promise.all([
+        api.getColumns(newBoard.id),
+        api.getTasks(newBoard.id),
+      ])
+
+      const boardWithData = {
+        ...newBoard,
+        columns,
+        tasks,
+      }
+
+      setBoards((prev) => [...prev, boardWithData])
+      setActiveBoardId(newBoard.id)
+
+      return boardWithData
+    } catch (error) {
+      console.error('Failed to create board:', error)
+      return null
     }
-    setBoards((prev) => [...prev, board])
-    setActiveBoardId(id)
-    return board
   }
 
   function selectBoard(id) {
@@ -50,71 +97,137 @@ export function useBoards() {
 
   // ---- Columns (lists) ----
 
-  function createColumn(title) {
-    updateActiveBoard((b) => ({
-      ...b,
-      columns: [...b.columns, { id: `col-${Date.now()}`, title }],
-    }))
+  async function createColumn(title) {
+    if (!activeBoardId) return
+
+    try {
+      const newColumn = await api.createColumn(activeBoardId, title)
+
+      updateActiveBoard((b) => ({
+        ...b,
+        columns: [...b.columns, newColumn],
+      }))
+
+      return newColumn
+    } catch (error) {
+      console.error('Failed to create column:', error)
+      return null
+    }
   }
 
-  function renameColumn(columnId, title) {
-    updateActiveBoard((b) => ({
-      ...b,
-      columns: b.columns.map((c) => (c.id === columnId ? { ...c, title } : c)),
-    }))
+  async function renameColumn(columnId, title) {
+    try {
+      const updatedColumn = await api.updateColumn(columnId, title)
+
+      updateActiveBoard((b) => ({
+        ...b,
+        columns: b.columns.map((c) =>
+          c.id === columnId ? updatedColumn : c
+        ),
+      }))
+
+      return updatedColumn
+    } catch (error) {
+      console.error('Failed to rename column:', error)
+      return null
+    }
   }
 
-  function deleteColumn(columnId) {
-    updateActiveBoard((b) => ({
-      ...b,
-      columns: b.columns.filter((c) => c.id !== columnId),
-      tasks: b.tasks.filter((t) => t.columnId !== columnId),
-    }))
+  async function deleteColumn(columnId) {
+    try {
+      await api.deleteColumn(columnId)
+
+      updateActiveBoard((b) => ({
+        ...b,
+        columns: b.columns.filter((c) => c.id !== columnId),
+        tasks: b.tasks.filter((t) => t.columnId !== columnId),
+      }))
+    } catch (error) {
+      console.error('Failed to delete column:', error)
+    }
   }
 
   // ---- Tasks ----
+  async function addTask(columnId, title) {
+    try {
+      const newTask = await api.createTask(columnId, {
+        title,
+      })
 
-  function addTask(columnId, title) {
-    updateActiveBoard((b) => ({
-      ...b,
-      tasks: [
-        ...b.tasks,
-        {
-          id: `TB-${Date.now()}`,
-          columnId,
-          title,
-          description: '',
-          tag: 'frontend',
-          labels: [],
-          dueDate: null,
-          assignee: 'You',
-        },
-      ],
-    }))
+      updateActiveBoard((b) => ({
+        ...b,
+        tasks: [...b.tasks, newTask],
+      }))
+
+      return newTask
+    } catch (error) {
+      console.error('Failed to create task:', error)
+      return null
+    }
   }
 
-  function deleteTask(taskId) {
-    updateActiveBoard((b) => ({
-      ...b,
-      tasks: b.tasks.filter((t) => t.id !== taskId),
-    }))
+  async function deleteTask(taskId) {
+    try {
+      await api.deleteTask(taskId)
+
+      updateActiveBoard((b) => ({
+        ...b,
+        tasks: b.tasks.filter((t) => t.id !== taskId),
+      }))
+    } catch (error) {
+      console.error('Failed to delete task:', error)
+    }
   }
 
   /** fields can include any of: title, description, dueDate, labels, assignee */
-  function updateTask(taskId, fields) {
-    updateActiveBoard((b) => ({
-      ...b,
-      tasks: b.tasks.map((t) => (t.id === taskId ? { ...t, ...fields } : t)),
-    }))
+  async function updateTask(taskId, fields) {
+    try {
+      const updatedTask = await api.updateTask(taskId, fields)
+
+      updateActiveBoard((b) => ({
+        ...b,
+        tasks: b.tasks.map((t) =>
+          t.id === taskId ? updatedTask : t
+        ),
+      }))
+
+      return updatedTask
+    } catch (error) {
+      console.error('Failed to update task:', error)
+      return null
+    }
   }
 
-  function moveTask(taskId, targetColumnId) {
-    updateActiveBoard((b) => ({
-      ...b,
-      tasks: b.tasks.map((t) =>
-        t.id === taskId ? { ...t, columnId: targetColumnId } : t
-      ),
-    }))
+  async function moveTask(taskId, targetColumnId) {
+    if (!activeBoardId) return null
+
+    try {
+      const destinationTasks = activeBoard.tasks.filter(
+        (t) =>
+          t.columnId === targetColumnId &&
+          t.id !== taskId
+      )
+
+      const newOrder = destinationTasks.length
+
+      const updatedTask = await api.moveTask(
+        taskId,
+        targetColumnId,
+        newOrder
+      )
+
+      const refreshedTasks = await api.getTasks(activeBoardId)
+
+      updateActiveBoard((b) => ({
+        ...b,
+        tasks: refreshedTasks,
+      }))
+
+      return updatedTask
+    } catch (error) {
+      console.error('Failed to move task:', error)
+      return null
+    }
   }
 
   return {
