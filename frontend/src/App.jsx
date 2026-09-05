@@ -4,15 +4,18 @@ import BoardSwitcher from './components/BoardSwitcher'
 import TaskFilterBar from './components/TaskFilterBar'
 import TaskDetailModal from './components/TaskDetailModal'
 import ShareBoardModal from './components/ShareBoardModal'
+import JoinBoardPage from './components/JoinBoardPage'
 import { useBoards } from './hooks/useBoards'
 import './App.css'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import LoginPage from './components/LoginPage'
 import RegisterPage from './components/RegisterPage'
 import { useAuth } from './context/AuthContext.jsx'
 
 export default function App() {
   const { user, initializing, logout } = useAuth()
+  const location = useLocation()
+  const preferredBoardId = location.state?.selectBoardId
 
   const {
     boards,
@@ -27,7 +30,7 @@ export default function App() {
     deleteTask,
     updateTask,
     moveTask,
-  } = useBoards()
+  } = useBoards(preferredBoardId)
 
   const [selectedTaskId, setSelectedTaskId] = useState(null)
   const [isShareOpen, setIsShareOpen] = useState(false)
@@ -48,6 +51,8 @@ export default function App() {
   const selectedTask =
     activeBoard.tasks.find((task) => task.id === selectedTaskId) ?? null
 
+  const canEdit = activeBoard.role === 'owner' || activeBoard.role === 'editor'
+
   const handleCreateBoard = () => {
     if (newBoardTitle.trim() === '') return
 
@@ -64,6 +69,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/join/:token" element={<JoinBoardPage />} />
       <Route
         path="/*"
         element={
@@ -74,7 +80,6 @@ export default function App() {
               <header className="app__header">
                 <div className="app__brand">
                   <span className="app__brand-mark">TN</span>
-
                   <div>
                     <h1 className="app__title">TaskNest</h1>
                   </div>
@@ -103,14 +108,15 @@ export default function App() {
                     Share
                   </button>
 
-                  <span className="app__user">{user.name}</span>
+                  <span className="app__user">
+                    {user.name}
+                    {activeBoard.role && activeBoard.role !== 'owner' && (
+                      <> · {activeBoard.role}</>
+                    )}
+                  </span>
                   <button className="app__logout" onClick={logout}>
                     Log out
                   </button>
-
-                  <span className="app__badge">
-                    
-                  </span>
                 </div>
               </header>
 
@@ -179,6 +185,7 @@ export default function App() {
               <Board
                 columns={activeBoard.columns}
                 tasks={visibleTasks}
+                canEdit={canEdit}
                 onDrop={moveTask}
                 onDeleteTask={deleteTask}
                 onAddTask={addTask}
@@ -191,6 +198,7 @@ export default function App() {
               {selectedTask && (
                 <TaskDetailModal
                   task={selectedTask}
+                  canEdit={canEdit}
                   onClose={() => setSelectedTaskId(null)}
                   onSave={(fields) =>
                     updateTask(selectedTask.id, fields)

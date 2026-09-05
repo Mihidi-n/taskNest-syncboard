@@ -2,16 +2,10 @@ import AddColumnForm from './AddColumnForm'
 import Column from './Column'
 import './Board.css'
 
-/**
- * Board — top-level layout for the active board's columns.
- *
- * State now lives in App.jsx (via the useBoards hook) so it can be
- * shared across multiple boards; this component is just presentational
- * — it renders what it's given and forwards events upward.
- */
 export default function Board({
   columns,
   tasks,
+  canEdit,
   onDrop,
   onDeleteTask,
   onAddTask,
@@ -27,6 +21,7 @@ export default function Board({
           key={column.id}
           column={column}
           tasks={tasks.filter((t) => t.columnId === column.id)}
+          canEdit={canEdit}
           onDrop={onDrop}
           onDelete={onDeleteTask}
           onAddTask={onAddTask}
@@ -35,7 +30,7 @@ export default function Board({
           onDeleteColumn={onDeleteColumn}
         />
       ))}
-      <AddColumnForm onAdd={onAddColumn} />
+      {canEdit && <AddColumnForm onAdd={onAddColumn} />}
     </div>
   )
 }

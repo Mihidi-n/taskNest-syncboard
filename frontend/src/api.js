@@ -5,7 +5,6 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 async function request(endpoint, options = {}) {
   const response = await authFetch(`${API_BASE_URL}${endpoint}`, options)
 
-  // Some DELETE endpoints return 204 with no body
   if (response.status === 204) {
     return null
   }
@@ -22,10 +21,6 @@ async function request(endpoint, options = {}) {
 
   return data
 }
-
-// --------------------
-// Boards
-// --------------------
 
 export function getBoards() {
   return request('/api/boards')
@@ -55,16 +50,18 @@ export function deleteBoard(boardId) {
   })
 }
 
-export function shareBoard(boardId, email) {
+export function shareBoard(boardId, role) {
   return request(`/api/boards/${boardId}/share`, {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ role }),
   })
 }
 
-// --------------------
-// Columns
-// --------------------
+export function joinBoard(token) {
+  return request(`/api/boards/join/${token}`, {
+    method: 'POST',
+  })
+}
 
 export function getColumns(boardId) {
   return request(`/api/columns/board/${boardId}`)
@@ -89,10 +86,6 @@ export function deleteColumn(columnId) {
     method: 'DELETE',
   })
 }
-
-// --------------------
-// Tasks
-// --------------------
 
 export function getTasks(boardId) {
   return request(`/api/tasks/board/${boardId}`)

@@ -1,119 +1,136 @@
+import crypto from 'crypto'
 import Board from '../models/Board.js'
 import Column from '../models/Column.js'
 import Task from '../models/Task.js'
 import { serializeBoard } from '../serialize.js'
-
-/**
- * OWNER: Board API
- * Routes already wired in routes/boardRoutes.js (all behind `protect`):
- *   GET    /api/boards          — list boards the logged-in user owns or is a member of
- *   POST   /api/boards          { name }
- *   GET    /api/boards/:id
- *   PATCH  /api/boards/:id      { name }
- *   DELETE /api/boards/:id      — also delete its columns and tasks
- *   POST   /api/boards/:id/share  { email }  — adds that user as a member
- */
+import { roleOnBoard, canEdit } from '../permissions.js'
 
 export async function listBoards(req, res) {
   try {
     const boards = await Board.find({
-      $or: [{ owner: req.userId }, { members: req.userId }],
+      $or: [{ owner: req.userId }, { 'members.user': req.userId }],
     })
-    res.json(boards.map(serializeBoard))
+    res.json(boards.map((b) => serializeBoard(b, req.userId)))
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ error: error.message })
   }
 }
 
 export async function createBoard(req, res) {
   try {
-    const { name } = req.body;
-    const ownerId = req.userId;
+    const { name } = req.body
+    const ownerId = req.userId
 
-    // 1. Create the board
-    const board = await Board.create({ 
-      name, 
-      owner: ownerId, 
-      members: [ownerId] 
-    });
+    const board = await Board.create({ name, owner: ownerId, members: [] })
 
-    // 2. Create default columns: To Do / Doing / Done
-    const defaultColumns = ['To Do', 'Doing', 'Done'].map(title => ({
+    const defaultColumns = ['To Do', 'Doing', 'Done'].map((title, i) => ({
       title,
-      board: board._id,
-      order: 0
-    }));
-    await Column.insertMany(defaultColumns);
+      boardId: board._id,
+      order: i,
+    }))
+    await Column.insertMany(defaultColumns)
 
-    res.status(201).json(serializeBoard(board));
+    res.status(201).json(serializeBoard(board, ownerId))
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ error: error.message })
   }
 }
 
 export async function getBoard(req, res) {
   try {
-    const board = await Board.findOne({
-      _id: req.params.id,
-      $or: [{ owner: req.userId }, { members: req.userId }],
-    });
-    if (!board) return res.status(404).json({ message: "Board not found" });
-    
-    res.json(serializeBoard(board));
+    const board = await Board.findById(req.params.id)
+    const role = board ? roleOnBoard(board, req.userId) : null
+    if (!board || !role) {
+      return res.status(404).json({ error: 'Board not found' })
+    }
+    res.json(serializeBoard(board, req.userId))
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ error: error.message })
   }
 }
 
 export async function renameBoard(req, res) {
   try {
-    const { name } = req.body;
+    const board = await Board.findById(req.params.id)
+    const role = board ? roleOnBoard(board, req.userId) : null
+    if (!board || !role) {
+      return res.status(404).json({ error: 'Board not found' })
+    }
+    if (!canEdit(role)) {
+      return res.status(403).json({ error: 'Viewers cannot rename this board' })
+    }
 
-    const board = await Board.findOneAndUpdate(
-      { _id: req.params.id, $or: [{ owner: req.userId }, { members: req.userId }] },
-      { name },
-      { new: true }
-    );
-    if (!board) return res.status(404).json({ message: "Board not found" });
-    
-    res.json(serializeBoard(board));
+    board.name = req.body.name
+    await board.save()
+    res.json(serializeBoard(board, req.userId))
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ error: error.message })
   }
 }
 
 export async function deleteBoard(req, res) {
   try {
-    const board = await Board.findOneAndDelete({ _id: req.params.id, owner: req.userId });
-    if (!board) return res.status(404).json({ message: "Board not found or not owner" });
+    const board = await Board.findOneAndDelete({ _id: req.params.id, owner: req.userId })
+    if (!board) {
+      return res.status(404).json({ error: 'Board not found or you are not the owner' })
+    }
 
-    // also delete columns and tasks
-    await Column.deleteMany({ board: req.params.id });
-    await Task.deleteMany({ board: req.params.id });
-    
-    res.json({ message: "Board deleted" });
+    await Column.deleteMany({ boardId: board._id })
+    await Task.deleteMany({ boardId: board._id })
+
+    res.status(204).end()
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ error: error.message })
   }
 }
 
 export async function shareBoard(req, res) {
   try {
-    const { email } = req.body;
-    
-    // NOTE: This assumes you have a User model. For now we'll just add a placeholder
-    // In real app: const userToAdd = await User.findOne({ email })
-    // Then add userToAdd._id to members
+    const { role } = req.body
+    if (!['viewer', 'editor'].includes(role)) {
+      return res.status(400).json({ error: 'role must be "viewer" or "editor"' })
+    }
 
-    const board = await Board.findOneAndUpdate(
-      { _id: req.params.id, owner: req.userId },
-      { $addToSet: { members: "ADD_USER_ID_HERE" } }, // TODO: replace with real user ID from email
-      { new: true }
-    );
-    if (!board) return res.status(404).json({ message: "Board not found or not owner" });
+    const board = await Board.findOne({ _id: req.params.id, owner: req.userId })
+    if (!board) {
+      return res.status(404).json({ error: 'Board not found or you are not the owner' })
+    }
 
-    res.json(serializeBoard(board));
+    if (!board.shareToken) {
+      board.shareToken = crypto.randomBytes(16).toString('hex')
+    }
+    board.shareRole = role
+    await board.save()
+
+    const frontendOrigin = (process.env.CLIENT_ORIGIN || 'http://localhost:5173').split(',')[0]
+    res.json({
+      link: `${frontendOrigin}/join/${board.shareToken}`,
+      role: board.shareRole,
+    })
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ error: error.message })
+  }
+}
+
+export async function joinBoard(req, res) {
+  try {
+    const { token } = req.params
+    const board = await Board.findOne({ shareToken: token })
+    if (!board) {
+      return res.status(404).json({ error: 'This link is invalid or has expired.' })
+    }
+
+    const alreadyHasAccess =
+      board.owner.toString() === req.userId ||
+      board.members.some((m) => m.user.toString() === req.userId)
+
+    if (!alreadyHasAccess) {
+      board.members.push({ user: req.userId, role: board.shareRole || 'viewer' })
+      await board.save()
+    }
+
+    res.json(serializeBoard(board, req.userId))
+  } catch (error) {
+    res.status(500).json({ error: error.message })
   }
 }

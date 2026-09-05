@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import './Auth.css'
+import { joinBoard } from '../api.js'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -47,6 +48,19 @@ export default function LoginPage() {
     setSubmitError('')
     try {
       await login({ email: form.email.trim(), password: form.password, keepLoggedIn })
+
+      const pendingToken = sessionStorage.getItem('pendingJoinToken')
+      if (pendingToken) {
+        sessionStorage.removeItem('pendingJoinToken')
+        try {
+          const board = await joinBoard(pendingToken)
+          navigate('/', { state: { selectBoardId: board.id } })
+          return
+        } catch {
+          // link turned out to be bad — continue into the app normally
+        }
+      }
+
       navigate('/')
     } catch (err) {
       setSubmitError(err.message)
