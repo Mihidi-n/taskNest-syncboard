@@ -1,42 +1,21 @@
 import Column from '../models/Column.js'
 import Task from '../models/Task.js'
+import Board from '../models/Board.js'
 import { serializeColumn } from '../serialize.js'
-
-/**
- * OWNER: Column API
- * Routes already wired in routes/columnRoutes.js (all behind `protect`):
- *   GET    /api/columns/board/:boardId    — list columns for a board
- *   POST   /api/columns/board/:boardId    { title }
- *   PATCH  /api/columns/:id               { title }   — rename
- *   DELETE /api/columns/:id               — also delete its tasks
- *
- * Corresponds to the frontend's AddColumnForm and ColumnMenu features
- * (frontend/src/components/AddColumnForm.jsx, ColumnMenu.jsx) — once
- * both sides are done, those components' onAdd/onRename/onDelete
- * callbacks will call these endpoints instead of the local mock state.
- *
- * Worked example for creating a column (rename/delete are one-liners
- * with findByIdAndUpdate / findByIdAndDelete — see boardController.js
- * for that pattern):
- *
- *   export async function createColumn(req, res) {
- *     const { boardId } = req.params
- *     const { title } = req.body
- *     if (!title?.trim()) return res.status(400).json({ error: 'title is required' })
- *
- *     const count = await Column.countDocuments({ boardId })
- *     const column = await Column.create({ boardId, title: title.trim(), order: count })
- *     res.status(201).json(serializeColumn(column))
- *   }
- */
+import { roleOnBoard, canEdit } from '../permissions.js'
 
 export async function listColumns(req, res) {
- try {
+  try {
     const { boardId } = req.params
+    const board = await Board.findById(boardId)
+    if (!board || !roleOnBoard(board, req.userId)) {
+      return res.status(404).json({ error: 'Board not found' })
+    }
+
     const columns = await Column.find({ boardId }).sort('order')
     res.json(columns.map(serializeColumn))
   } catch (err) {
-    res.status(500).json({ message: "Error listing columns", error: err })
+    res.status(500).json({ message: 'Error listing columns', error: err.message })
   }
 }
 
@@ -49,21 +28,30 @@ export async function createColumn(req, res) {
       return res.status(400).json({ error: 'title is required' })
     }
 
+    const board = await Board.findById(boardId)
+    const role = board ? roleOnBoard(board, req.userId) : null
+    if (!board || !role) {
+      return res.status(404).json({ error: 'Board not found' })
+    }
+    if (!canEdit(role)) {
+      return res.status(403).json({ error: 'Viewers cannot add lists' })
+    }
+
     const count = await Column.countDocuments({ boardId })
     const column = await Column.create({
       boardId,
       title: title.trim(),
-      order: count
+      order: count,
     })
 
     res.status(201).json(serializeColumn(column))
   } catch (err) {
-    res.status(500).json({ message: "Error creating column", error: err })
+    res.status(500).json({ message: 'Error creating column', error: err.message })
   }
 }
 
 export async function renameColumn(req, res) {
-   try {
+  try {
     const { id } = req.params
     const { title } = req.body
 
@@ -71,19 +59,24 @@ export async function renameColumn(req, res) {
       return res.status(400).json({ error: 'title is required' })
     }
 
-    const column = await Column.findByIdAndUpdate(
-      id,
-      { title: title.trim() },
-      { new: true }
-    )
+    const column = await Column.findById(id)
+    if (!column) return res.status(404).json({ error: 'Column not found' })
 
-    if (!column) {
-      return res.status(404).json({ error: 'Column not found' })
+    const board = await Board.findById(column.boardId)
+    const role = board ? roleOnBoard(board, req.userId) : null
+    if (!board || !role) {
+      return res.status(404).json({ error: 'Board not found' })
     }
+    if (!canEdit(role)) {
+      return res.status(403).json({ error: 'Viewers cannot rename lists' })
+    }
+
+    column.title = title.trim()
+    await column.save()
 
     res.json(serializeColumn(column))
   } catch (err) {
-    res.status(500).json({ message: "Error renaming column", error: err })
+    res.status(500).json({ message: 'Error renaming column', error: err.message })
   }
 }
 
@@ -91,14 +84,23 @@ export async function deleteColumn(req, res) {
   try {
     const { id } = req.params
 
-    const column = await Column.findByIdAndDelete(id)
-    if (!column) {
-      return res.status(404).json({ error: 'Column not found' })
+    const column = await Column.findById(id)
+    if (!column) return res.status(404).json({ error: 'Column not found' })
+
+    const board = await Board.findById(column.boardId)
+    const role = board ? roleOnBoard(board, req.userId) : null
+    if (!board || !role) {
+      return res.status(404).json({ error: 'Board not found' })
+    }
+    if (!canEdit(role)) {
+      return res.status(403).json({ error: 'Viewers cannot delete lists' })
     }
 
+    await Column.findByIdAndDelete(id)
     await Task.deleteMany({ columnId: id })
-    res.json({ message: "Column deleted" })
+
+    res.json({ message: 'Column deleted' })
   } catch (err) {
-    res.status(500).json({ message: "Error deleting column", error: err })
+    res.status(500).json({ message: 'Error deleting column', error: err.message })
   }
 }

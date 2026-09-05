@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 async function request(path, body) {
   const res = await fetch(`${API_URL}${path}`, {
@@ -13,13 +13,13 @@ async function request(path, body) {
     throw new Error(data.error || 'Something went wrong')
   }
 
-  return data // { token, user: { id, name, email } }
+  return data
 }
 
 export function loginUser({ email, password }) {
-  return request('/auth/login', { email, password })
+  return request('/api/auth/login', { email, password })
 }
 
 export function registerUser({ name, email, password }) {
-  return request('/auth/register', { name, email, password })
+  return request('/api/auth/register', { name, email, password })
 }

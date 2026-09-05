@@ -3,15 +3,10 @@ import ColumnMenu from './ColumnMenu'
 import TaskCard from './TaskCard'
 import './Column.css'
 
-/**
- * Column — holds one lane (To Do / Doing / Done) worth of TaskCards,
- * the inline "add task" affordance, the drop target for drag/drop,
- * an editable title (click to rename), and a delete button (via
- * ColumnMenu) for the list itself.
- */
 export default function Column({
   column,
   tasks,
+  canEdit,
   onDrop,
   onDelete,
   onAddTask,
@@ -35,6 +30,7 @@ export default function Column({
   }, [isEditingTitle])
 
   function startEditingTitle() {
+    if (!canEdit) return
     setTitleDraft(column.title)
     setIsEditingTitle(true)
   }
@@ -61,11 +57,13 @@ export default function Column({
   }
 
   function handleDragOver(e) {
+    if (!canEdit) return
     e.preventDefault()
     setIsOver(true)
   }
 
   function handleDrop(e) {
+    if (!canEdit) return
     e.preventDefault()
     setIsOver(false)
     const taskId = e.dataTransfer.getData('text/plain')
@@ -102,7 +100,7 @@ export default function Column({
           <h2
             className="column__title"
             onClick={startEditingTitle}
-            title="Click to rename"
+            title={canEdit ? 'Click to rename' : ''}
           >
             {column.title}
           </h2>
@@ -110,10 +108,12 @@ export default function Column({
 
         <div className="column__header-actions">
           <span className="column__count">{tasks.length}</span>
-          <ColumnMenu
-            column={column}
-            onDelete={() => onDeleteColumn(column.id)}
-          />
+          {canEdit && (
+            <ColumnMenu
+              column={column}
+              onDelete={() => onDeleteColumn(column.id)}
+            />
+          )}
         </div>
       </header>
 
@@ -122,6 +122,7 @@ export default function Column({
           <TaskCard
             key={task.id}
             task={task}
+            canEdit={canEdit}
             onDragStart={(e, id) => e.dataTransfer.setData('text/plain', id)}
             onDelete={onDelete}
             onOpen={onOpenTask}
@@ -129,32 +130,37 @@ export default function Column({
         ))}
 
         {tasks.length === 0 && !isAdding && (
-          <p className="column__empty">Nothing here yet — drag a card over or add one below.</p>
+          <p className="column__empty">
+            {canEdit
+              ? 'Nothing here yet — drag a card over or add one below.'
+              : 'Nothing here yet.'}
+          </p>
         )}
       </div>
 
-      {isAdding ? (
-        <form className="column__add-form" onSubmit={submitDraft}>
-          <input
-            autoFocus
-            type="text"
-            placeholder="Task title…"
-            value={draftTitle}
-            onChange={(e) => setDraftTitle(e.target.value)}
-            onBlur={() => !draftTitle && setIsAdding(false)}
-          />
-          <div className="column__add-actions">
-            <button type="submit" className="column__add-confirm">Add card</button>
-            <button type="button" className="column__add-cancel" onClick={() => setIsAdding(false)}>
-              Cancel
-            </button>
-          </div>
-        </form>
-      ) : (
-        <button className="column__add-trigger" onClick={() => setIsAdding(true)}>
-          + Add a card
-        </button>
-      )}
+      {canEdit &&
+        (isAdding ? (
+          <form className="column__add-form" onSubmit={submitDraft}>
+            <input
+              autoFocus
+              type="text"
+              placeholder="Task title…"
+              value={draftTitle}
+              onChange={(e) => setDraftTitle(e.target.value)}
+              onBlur={() => !draftTitle && setIsAdding(false)}
+            />
+            <div className="column__add-actions">
+              <button type="submit" className="column__add-confirm">Add card</button>
+              <button type="button" className="column__add-cancel" onClick={() => setIsAdding(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button className="column__add-trigger" onClick={() => setIsAdding(true)}>
+            + Add a card
+          </button>
+        ))}
     </section>
   )
 }

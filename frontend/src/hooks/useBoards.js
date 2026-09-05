@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx'
  * useBoards — connects board, column, and task actions
  * to the backend API and keeps the frontend state in sync.
  */
-export function useBoards() {
+export function useBoards(preferredBoardId) {
   const { user } = useAuth()
 
   const [boards, setBoards] = useState([])
@@ -53,7 +53,12 @@ export function useBoards() {
         setBoards(boardsWithData)
 
         if (boardsWithData.length > 0) {
-          setActiveBoardId(boardsWithData[0].id)
+          const target =
+            preferredBoardId &&
+            boardsWithData.some((b) => b.id === preferredBoardId)
+              ? preferredBoardId
+              : boardsWithData[0].id
+          setActiveBoardId(target)
         } else {
           setActiveBoardId(null)
         }

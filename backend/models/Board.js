@@ -4,10 +4,16 @@ const boardSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    // Anyone in this list (plus the owner) can view/edit the board.
-    // The "share the board" feature adds users here — see
-    // controllers/boardController.js.
-    members: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+
+    members: [
+      {
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+        role: { type: String, enum: ['viewer', 'editor'], default: 'editor' },
+      },
+    ],
+
+    shareToken: { type: String, unique: true, sparse: true },
+    shareRole: { type: String, enum: ['viewer', 'editor'], default: 'editor' },
   },
   { timestamps: true }
 )
