@@ -21,7 +21,7 @@ export function AuthProvider({ children }) {
         return
       }
       try {
-        const res = await fetch(`${API_URL}/auth/me`, {
+        const res = await fetch(`${API_URL}/api/auth/me`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (!res.ok) throw new Error('invalid token')

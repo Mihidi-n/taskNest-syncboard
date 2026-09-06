@@ -4,12 +4,15 @@ import Column from '../models/Column.js'
 import Task from '../models/Task.js'
 import { serializeBoard } from '../serialize.js'
 import { roleOnBoard, canEdit } from '../permissions.js'
+import { notifyBoardChanged } from '../socket.js'
 
 export async function listBoards(req, res) {
   try {
     const boards = await Board.find({
       $or: [{ owner: req.userId }, { 'members.user': req.userId }],
     })
+      .populate('owner', 'name email')
+      .populate('members.user', 'name email')
     res.json(boards.map((b) => serializeBoard(b, req.userId)))
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -30,7 +33,8 @@ export async function createBoard(req, res) {
     }))
     await Column.insertMany(defaultColumns)
 
-    res.status(201).json(serializeBoard(board, ownerId))
+    const populated = await Board.findById(board._id).populate('owner', 'name email')
+    res.status(201).json(serializeBoard(populated, ownerId))
   } catch (error) {
     res.status(500).json({ error: error.message })
   }
@@ -39,6 +43,8 @@ export async function createBoard(req, res) {
 export async function getBoard(req, res) {
   try {
     const board = await Board.findById(req.params.id)
+      .populate('owner', 'name email')
+      .populate('members.user', 'name email')
     const role = board ? roleOnBoard(board, req.userId) : null
     if (!board || !role) {
       return res.status(404).json({ error: 'Board not found' })
@@ -52,6 +58,8 @@ export async function getBoard(req, res) {
 export async function renameBoard(req, res) {
   try {
     const board = await Board.findById(req.params.id)
+      .populate('owner', 'name email')
+      .populate('members.user', 'name email')
     const role = board ? roleOnBoard(board, req.userId) : null
     if (!board || !role) {
       return res.status(404).json({ error: 'Board not found' })
@@ -62,6 +70,8 @@ export async function renameBoard(req, res) {
 
     board.name = req.body.name
     await board.save()
+
+    notifyBoardChanged(board._id.toString())
     res.json(serializeBoard(board, req.userId))
   } catch (error) {
     res.status(500).json({ error: error.message })
@@ -116,19 +126,24 @@ export async function joinBoard(req, res) {
   try {
     const { token } = req.params
     const board = await Board.findOne({ shareToken: token })
+      .populate('owner', 'name email')
+      .populate('members.user', 'name email')
     if (!board) {
       return res.status(404).json({ error: 'This link is invalid or has expired.' })
     }
 
+    const ownerId = board.owner._id.toString()
     const alreadyHasAccess =
-      board.owner.toString() === req.userId ||
-      board.members.some((m) => m.user.toString() === req.userId)
+      ownerId === req.userId ||
+      board.members.some((m) => (m.user._id ? m.user._id.toString() : m.user.toString()) === req.userId)
 
     if (!alreadyHasAccess) {
       board.members.push({ user: req.userId, role: board.shareRole || 'viewer' })
       await board.save()
+      await board.populate('members.user', 'name email')
     }
 
+    notifyBoardChanged(board._id.toString())
     res.json(serializeBoard(board, req.userId))
   } catch (error) {
     res.status(500).json({ error: error.message })

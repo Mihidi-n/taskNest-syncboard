@@ -3,15 +3,34 @@ export function serializeUser(user) {
 }
 
 export function serializeBoard(board, requestingUserId) {
-  const isOwner = board.owner.toString() === requestingUserId
-  const membership = board.members.find((m) => m.user.toString() === requestingUserId)
+  const ownerId = board.owner._id ? board.owner._id.toString() : board.owner.toString()
+  const isOwner = ownerId === requestingUserId
+
+  const membersWithoutOwner = board.members.filter((m) => {
+    const uid = m.user._id ? m.user._id.toString() : m.user.toString()
+    return uid !== ownerId
+  })
+
+  const membership = membersWithoutOwner.find((m) => {
+    const uid = m.user._id ? m.user._id.toString() : m.user.toString()
+    return uid === requestingUserId
+  })
   const role = isOwner ? 'owner' : membership?.role || null
 
   return {
     id: board._id.toString(),
     name: board.name,
-    owner: board.owner.toString(),
-    members: board.members.map((m) => ({ id: m.user.toString(), role: m.role })),
+    owner: {
+      id: ownerId,
+      name: board.owner.name || 'Unknown',
+      email: board.owner.email || '',
+    },
+    members: membersWithoutOwner.map((m) => ({
+      id: m.user._id ? m.user._id.toString() : m.user.toString(),
+      name: m.user.name || 'Unknown',
+      email: m.user.email || '',
+      role: m.role,
+    })),
     role,
   }
 }
