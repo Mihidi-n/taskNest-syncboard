@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import * as api from '../api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { socket } from '../socket.js'
+
 /**
  * useBoards — connects board, column, and task actions
  * to the backend API and keeps the frontend state in sync.
@@ -23,6 +25,24 @@ export function useBoards(preferredBoardId) {
     setBoards((prev) =>
       prev.map((b) => (b.id === activeBoardId ? updater(b) : b))
     )
+  }
+
+  async function refreshBoardData(boardId) {
+    try {
+      const [board, columns, tasks] = await Promise.all([
+        api.getBoard(boardId),
+        api.getColumns(boardId),
+        api.getTasks(boardId),
+      ])
+
+      setBoards((prev) =>
+        prev.map((b) =>
+          b.id === boardId ? { ...board, columns, tasks } : b
+        )
+      )
+    } catch (error) {
+      console.error('Failed to refresh board:', error)
+    }
   }
 
   useEffect(() => {
@@ -69,6 +89,26 @@ export function useBoards(preferredBoardId) {
 
     loadBoards()
   }, [user])
+
+  useEffect(() => {
+    if (!activeBoardId) return
+
+    socket.emit('joinBoard', activeBoardId)
+
+    function handleBoardChanged({ boardId }) {
+      if (boardId === activeBoardId) {
+        refreshBoardData(boardId)
+      }
+    }
+
+    socket.on('board:changed', handleBoardChanged)
+
+    return () => {
+      socket.emit('leaveBoard', activeBoardId)
+      socket.off('board:changed', handleBoardChanged)
+    }
+  }, [activeBoardId])
+
   // ---- Boards ----
 
   async function createBoard(name) {

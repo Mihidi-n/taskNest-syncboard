@@ -3,6 +3,7 @@ import Column from '../models/Column.js'
 import Board from '../models/Board.js'
 import { serializeTask } from '../serialize.js'
 import { roleOnBoard, canEdit } from '../permissions.js'
+import { notifyBoardChanged } from '../socket.js'
 
 export async function listTasksForBoard(req, res) {
   try {
@@ -55,6 +56,7 @@ export async function createTask(req, res) {
       order: count,
     })
 
+    notifyBoardChanged(column.boardId.toString())
     res.status(201).json(serializeTask(task))
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -93,6 +95,7 @@ export async function updateTask(req, res) {
       runValidators: true,
     })
 
+    notifyBoardChanged(task.boardId.toString())
     res.status(200).json(serializeTask(updatedTask))
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -130,19 +133,18 @@ export async function moveTask(req, res) {
       const newOrder = Math.max(0, Math.min(order, tasks.length))
       tasks.splice(newOrder, 0, task)
 
-      for (let i = 0; i < tasks.length; i++) {
-        tasks[i].order = i
-        await tasks[i].save()
-      }
+      tasks.forEach((t, i) => {
+        t.order = i
+      })
+      await Promise.all(tasks.map((t) => t.save()))
     } else {
       const srcTasks = await Task.find({ columnId: srcColumnId }).sort('order')
       const srcIndex = srcTasks.findIndex((t) => t._id.equals(id))
       srcTasks.splice(srcIndex, 1)
 
-      for (let i = 0; i < srcTasks.length; i++) {
-        srcTasks[i].order = i
-        await srcTasks[i].save()
-      }
+      srcTasks.forEach((t, i) => {
+        t.order = i
+      })
 
       const destTasks = await Task.find({ columnId: columnId }).sort('order')
       const newOrder = Math.max(0, Math.min(order, destTasks.length))
@@ -151,18 +153,18 @@ export async function moveTask(req, res) {
       task.boardId = destColumn.boardId
       task.order = newOrder
 
-      for (let i = 0; i < destTasks.length; i++) {
-        if (i < newOrder) {
-          destTasks[i].order = i
-        } else {
-          destTasks[i].order = i + 1
-        }
-        await destTasks[i].save()
-      }
+      destTasks.forEach((t, i) => {
+        t.order = i < newOrder ? i : i + 1
+      })
 
-      await task.save()
+      await Promise.all([
+        ...srcTasks.map((t) => t.save()),
+        ...destTasks.map((t) => t.save()),
+        task.save(),
+      ])
     }
 
+    notifyBoardChanged(task.boardId.toString())
     res.json(serializeTask(task))
   } catch (err) {
     res.status(500).json({ error: err.message })
@@ -183,7 +185,10 @@ export async function deleteTask(req, res) {
       return res.status(403).json({ error: 'Viewers cannot delete tasks' })
     }
 
+    const boardId = task.boardId.toString()
     await Task.findByIdAndDelete(req.params.id)
+
+    notifyBoardChanged(boardId)
     res.status(204).send()
   } catch (err) {
     res.status(500).json({ error: err.message })

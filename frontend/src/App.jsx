@@ -11,6 +11,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import LoginPage from './components/LoginPage'
 import RegisterPage from './components/RegisterPage'
 import { useAuth } from './context/AuthContext.jsx'
+import BoardMembers from './components/BoardMembers'
 
 export default function App() {
   const { user, initializing, logout } = useAuth()
@@ -114,6 +115,7 @@ export default function App() {
                       <> · {activeBoard.role}</>
                     )}
                   </span>
+
                   <button className="app__logout" onClick={logout}>
                     Log out
                   </button>
@@ -180,6 +182,8 @@ export default function App() {
                   tasks={activeBoard.tasks}
                   onFilterChange={setFilterFn}
                 />
+
+                <BoardMembers board={activeBoard} />
               </div>
 
               <Board

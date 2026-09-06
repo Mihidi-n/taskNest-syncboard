@@ -3,6 +3,7 @@ import Task from '../models/Task.js'
 import Board from '../models/Board.js'
 import { serializeColumn } from '../serialize.js'
 import { roleOnBoard, canEdit } from '../permissions.js'
+import { notifyBoardChanged } from '../socket.js'
 
 export async function listColumns(req, res) {
   try {
@@ -44,6 +45,7 @@ export async function createColumn(req, res) {
       order: count,
     })
 
+    notifyBoardChanged(boardId)
     res.status(201).json(serializeColumn(column))
   } catch (err) {
     res.status(500).json({ message: 'Error creating column', error: err.message })
@@ -74,6 +76,7 @@ export async function renameColumn(req, res) {
     column.title = title.trim()
     await column.save()
 
+    notifyBoardChanged(column.boardId.toString())
     res.json(serializeColumn(column))
   } catch (err) {
     res.status(500).json({ message: 'Error renaming column', error: err.message })
@@ -96,9 +99,12 @@ export async function deleteColumn(req, res) {
       return res.status(403).json({ error: 'Viewers cannot delete lists' })
     }
 
+    const boardId = column.boardId.toString()
+
     await Column.findByIdAndDelete(id)
     await Task.deleteMany({ columnId: id })
 
+    notifyBoardChanged(boardId)
     res.json({ message: 'Column deleted' })
   } catch (err) {
     res.status(500).json({ message: 'Error deleting column', error: err.message })

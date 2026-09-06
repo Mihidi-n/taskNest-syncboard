@@ -1,5 +1,7 @@
 import 'dotenv/config'
 import dns from 'node:dns'
+import http from 'http'
+import { initSocket } from './socket.js'
 
 dns.setServers(['8.8.8.8', '1.1.1.1'])
 
@@ -47,7 +49,11 @@ app.use((err, req, res, next) => {
 
 async function start() {
   await connectDB(MONGODB_URI)
-  app.listen(PORT, () => {
+
+  const httpServer = http.createServer(app)
+  initSocket(httpServer, process.env.CLIENT_ORIGIN.split(','))
+
+  httpServer.listen(PORT, () => {
     console.log(`CollabBoard API listening on http://localhost:${PORT}`)
   })
 }
