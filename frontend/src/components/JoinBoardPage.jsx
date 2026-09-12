@@ -21,7 +21,7 @@ export default function JoinBoardPage() {
     async function doJoin() {
       try {
         const board = await joinBoard(token)
-        navigate('/', { state: { selectBoardId: board.id } })
+        window.location.href = `/?board=${board.id}`
       } catch (err) {
         setError(err.message || 'This link is invalid or has expired.')
       }
