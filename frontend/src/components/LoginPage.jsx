@@ -54,7 +54,7 @@ export default function LoginPage() {
         sessionStorage.removeItem('pendingJoinToken')
         try {
           const board = await joinBoard(pendingToken)
-          navigate('/', { state: { selectBoardId: board.id } })
+          window.location.href = `/?board=${board.id}`
           return
         } catch {
           // link turned out to be bad — continue into the app normally

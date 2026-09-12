@@ -8,7 +8,9 @@ export function initSocket(httpServer, corsOrigins) {
   })
 
   io.on('connection', (socket) => {
+    
     socket.on('joinBoard', (boardId) => {
+      
       socket.join(`board:${boardId}`)
     })
     socket.on('leaveBoard', (boardId) => {

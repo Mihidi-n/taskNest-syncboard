@@ -5,18 +5,18 @@ import TaskFilterBar from './components/TaskFilterBar'
 import TaskDetailModal from './components/TaskDetailModal'
 import ShareBoardModal from './components/ShareBoardModal'
 import JoinBoardPage from './components/JoinBoardPage'
+import BoardMembers from './components/BoardMembers'
 import { useBoards } from './hooks/useBoards'
 import './App.css'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import LoginPage from './components/LoginPage'
 import RegisterPage from './components/RegisterPage'
 import { useAuth } from './context/AuthContext.jsx'
-import BoardMembers from './components/BoardMembers'
 
 export default function App() {
   const { user, initializing, logout } = useAuth()
-  const location = useLocation()
-  const preferredBoardId = location.state?.selectBoardId
+  const [searchParams] = useSearchParams()
+  const preferredBoardId = searchParams.get('board')
 
   const {
     boards,
@@ -109,13 +109,14 @@ export default function App() {
                     Share
                   </button>
 
+                  <BoardMembers board={activeBoard} />
+
                   <span className="app__user">
                     {user.name}
                     {activeBoard.role && activeBoard.role !== 'owner' && (
                       <> · {activeBoard.role}</>
                     )}
                   </span>
-
                   <button className="app__logout" onClick={logout}>
                     Log out
                   </button>
@@ -182,8 +183,6 @@ export default function App() {
                   tasks={activeBoard.tasks}
                   onFilterChange={setFilterFn}
                 />
-
-                <BoardMembers board={activeBoard} />
               </div>
 
               <Board

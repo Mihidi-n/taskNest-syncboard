@@ -3,15 +3,24 @@ export function serializeUser(user) {
 }
 
 export function serializeBoard(board, requestingUserId) {
-  const ownerId = board.owner._id ? board.owner._id.toString() : board.owner.toString()
+  const ownerRaw = board.owner
+  const ownerId = ownerRaw?._id
+    ? ownerRaw._id.toString()
+    : ownerRaw?.toString?.() ?? null
+
   const isOwner = ownerId === requestingUserId
 
-  const membersWithoutOwner = board.members.filter((m) => {
+  const seen = new Set()
+  const dedupedMembers = (board.members || []).filter((m) => {
+    if (!m.user) return false
     const uid = m.user._id ? m.user._id.toString() : m.user.toString()
-    return uid !== ownerId
+    if (uid === ownerId) return false
+    if (seen.has(uid)) return false
+    seen.add(uid)
+    return true
   })
 
-  const membership = membersWithoutOwner.find((m) => {
+  const membership = dedupedMembers.find((m) => {
     const uid = m.user._id ? m.user._id.toString() : m.user.toString()
     return uid === requestingUserId
   })
@@ -22,10 +31,10 @@ export function serializeBoard(board, requestingUserId) {
     name: board.name,
     owner: {
       id: ownerId,
-      name: board.owner.name || 'Unknown',
-      email: board.owner.email || '',
+      name: ownerRaw?.name || 'Unknown',
+      email: ownerRaw?.email || '',
     },
-    members: membersWithoutOwner.map((m) => ({
+    members: dedupedMembers.map((m) => ({
       id: m.user._id ? m.user._id.toString() : m.user.toString(),
       name: m.user.name || 'Unknown',
       email: m.user.email || '',

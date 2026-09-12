@@ -74,8 +74,7 @@ export function useBoards(preferredBoardId) {
 
         if (boardsWithData.length > 0) {
           const target =
-            preferredBoardId &&
-            boardsWithData.some((b) => b.id === preferredBoardId)
+            preferredBoardId && boardsWithData.some((b) => b.id === preferredBoardId)
               ? preferredBoardId
               : boardsWithData[0].id
           setActiveBoardId(target)
