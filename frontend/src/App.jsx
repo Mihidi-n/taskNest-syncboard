@@ -6,6 +6,7 @@ import TaskDetailModal from './components/TaskDetailModal'
 import ShareBoardModal from './components/ShareBoardModal'
 import JoinBoardPage from './components/JoinBoardPage'
 import BoardMembers from './components/BoardMembers'
+import UserMenu from './components/UserMenu'
 import { useBoards } from './hooks/useBoards'
 import './App.css'
 import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
@@ -14,7 +15,7 @@ import RegisterPage from './components/RegisterPage'
 import { useAuth } from './context/AuthContext.jsx'
 
 export default function App() {
-  const { user, initializing, logout } = useAuth()
+  const { user, initializing, logout, updateName } = useAuth()
   const [searchParams] = useSearchParams()
   const preferredBoardId = searchParams.get('board')
 
@@ -53,6 +54,15 @@ export default function App() {
     activeBoard.tasks.find((task) => task.id === selectedTaskId) ?? null
 
   const canEdit = activeBoard.role === 'owner' || activeBoard.role === 'editor'
+
+  // Simple, stable display numbers (#1, #2, #3...) based on creation
+  // order across the WHOLE board — not the long database ID.
+  const taskNumbers = {}
+  ;[...activeBoard.tasks]
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    .forEach((t, i) => {
+      taskNumbers[t.id] = i + 1
+    })
 
   const handleCreateBoard = () => {
     if (newBoardTitle.trim() === '') return
@@ -111,15 +121,12 @@ export default function App() {
 
                   <BoardMembers board={activeBoard} />
 
-                  <span className="app__user">
-                    {user.name}
-                    {activeBoard.role && activeBoard.role !== 'owner' && (
-                      <> · {activeBoard.role}</>
-                    )}
-                  </span>
-                  <button className="app__logout" onClick={logout}>
-                    Log out
-                  </button>
+                  <UserMenu
+                    user={user}
+                    role={activeBoard.role}
+                    onLogout={logout}
+                    onUpdateName={updateName}
+                  />
                 </div>
               </header>
 
@@ -188,6 +195,7 @@ export default function App() {
               <Board
                 columns={activeBoard.columns}
                 tasks={visibleTasks}
+                taskNumbers={taskNumbers}
                 canEdit={canEdit}
                 onDrop={moveTask}
                 onDeleteTask={deleteTask}

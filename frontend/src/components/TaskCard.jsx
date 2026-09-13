@@ -2,7 +2,7 @@ import { tags } from '../data/mockData'
 import LabelBadge from './LabelBadge'
 import './TaskCard.css'
 
-export default function TaskCard({ task, canEdit, onDragStart, onDelete, onOpen }) {
+export default function TaskCard({ task, displayNumber, canEdit, onDragStart, onDelete, onOpen }) {
   const tag = tags[task.tag]
 
   return (
@@ -16,7 +16,7 @@ export default function TaskCard({ task, canEdit, onDragStart, onDelete, onOpen 
       }}
     >
       <div className="task-card__top">
-        <span className="task-card__id">{task.id}</span>
+        <span className="task-card__id">#{displayNumber ?? '?'}</span>
 
         {canEdit && (
           <button

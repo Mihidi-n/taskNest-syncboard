@@ -56,3 +56,22 @@ export async function getCurrentUser(req, res) {
   }
   res.status(200).json(serializeUser(user))
 }
+
+export async function updateProfile(req, res) {
+  const { name } = req.body
+
+  if (!name?.trim()) {
+    return res.status(400).json({ error: 'name is required' })
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.userId,
+    { name: name.trim() },
+    { new: true }
+  )
+  if (!user) {
+    return res.status(404).json({ error: 'User not found' })
+  }
+
+  res.status(200).json(serializeUser(user))
+}

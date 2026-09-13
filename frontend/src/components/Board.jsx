@@ -5,6 +5,7 @@ import './Board.css'
 export default function Board({
   columns,
   tasks,
+  taskNumbers,
   canEdit,
   onDrop,
   onDeleteTask,
@@ -21,6 +22,7 @@ export default function Board({
           key={column.id}
           column={column}
           tasks={tasks.filter((t) => t.columnId === column.id)}
+          taskNumbers={taskNumbers}
           canEdit={canEdit}
           onDrop={onDrop}
           onDelete={onDeleteTask}

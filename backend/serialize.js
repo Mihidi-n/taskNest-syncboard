@@ -65,5 +65,6 @@ export function serializeTask(task) {
     labels: task.labels,
     assignee: task.assignee,
     order: task.order,
+    createdAt: task.createdAt,
   }
 }

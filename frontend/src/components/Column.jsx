@@ -6,6 +6,7 @@ import './Column.css'
 export default function Column({
   column,
   tasks,
+  taskNumbers,
   canEdit,
   onDrop,
   onDelete,
@@ -122,6 +123,7 @@ export default function Column({
           <TaskCard
             key={task.id}
             task={task}
+            displayNumber={taskNumbers[task.id]}
             canEdit={canEdit}
             onDragStart={(e, id) => e.dataTransfer.setData('text/plain', id)}
             onDelete={onDelete}

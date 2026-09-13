@@ -3,7 +3,7 @@ import { loginUser, registerUser } from '../authApi.js'
 
 const AuthContext = createContext(null)
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000'
 
 function getStoredToken() {
   return localStorage.getItem('token') || sessionStorage.getItem('token')
@@ -54,6 +54,22 @@ export function AuthProvider({ children }) {
     setUser(data.user)
   }
 
+  async function updateName(name) {
+    const token = getStoredToken()
+    const res = await fetch(`${API_URL}/api/auth/me`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Could not update name')
+    setUser(data)
+    return data
+  }
+
   function logout() {
     localStorage.removeItem('token')
     sessionStorage.removeItem('token')
@@ -61,7 +77,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, initializing, login, register, logout }}>
+    <AuthContext.Provider value={{ user, initializing, login, register, logout, updateName }}>
       {children}
     </AuthContext.Provider>
   )
